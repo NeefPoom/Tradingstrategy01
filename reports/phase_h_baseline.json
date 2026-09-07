@@ -1,0 +1,108 @@
+{
+  "phase_h_start": "2026-08-30T11:03:49.790184+00:00",
+  "models": {
+    "mr_win_classifier": {
+      "sha256": "161290f5c0f9f7de4947cf0629ca5b3fe63ab2b93207d273d32a705f1bf91afb",
+      "modified": "2026-08-30T10:42:38.146894+00:00"
+    },
+    "mr_return_regressor": {
+      "sha256": "a0c399d3d83bdf100da48a44d4879f0369e2eef4232289ac7e4f7f11307bb07b",
+      "modified": "2026-08-30T10:42:38.202369+00:00"
+    },
+    "mr_fail_classifier": {
+      "sha256": "5ed300bbf1ea8652374604fa883bdf71ac9d3038179a7949160e347f09426c8d",
+      "modified": "2026-08-30T10:42:54.749203+00:00"
+    },
+    "runner_win_classifier": {
+      "sha256": "cc46af2676a6fb8c6030e20232e355816c93141d78ec5ee507389b36801dfe15",
+      "modified": "2026-08-30T10:42:42.107055+00:00"
+    },
+    "runner_return_regressor": {
+      "sha256": "ee09f695951dec1f0290d62a4ab5b628f45f89aead366953de9c004fbe4aeedf",
+      "modified": "2026-08-30T10:42:42.142143+00:00"
+    }
+  },
+  "mr_fail_threshold": 0.45,
+  "tf_enabled": false,
+  "data_source": "yahoo",
+  "automatic_retraining": false,
+  "feature_columns": [
+    "ret_1",
+    "log_ret_1",
+    "mom_3",
+    "mom_6",
+    "mom_12",
+    "mom_24",
+    "rv_12",
+    "rv_24",
+    "rv_72",
+    "atr",
+    "natr",
+    "natr_ref",
+    "vol_ratio",
+    "er_10",
+    "er_20",
+    "er_40",
+    "slope_12",
+    "slope_24",
+    "slope_48",
+    "osc",
+    "signal",
+    "osc_minus_signal",
+    "osc_abs",
+    "osc_slope_1",
+    "osc_slope_3",
+    "signal_slope_1",
+    "cross_count",
+    "osc_same_sign_6",
+    "osc_same_sign_12",
+    "price_direction_12",
+    "price_direction_24",
+    "range_pct",
+    "body_pct",
+    "close_location"
+  ],
+  "config_snapshot": {
+    "decision": {
+      "min_probability": 0.55,
+      "caution_probability": 0.5,
+      "min_expected_return_pct": 0.0,
+      "max_mr_fail_probability": 0.45
+    },
+    "phase_h": {
+      "enabled": true,
+      "automatic_retraining": false,
+      "tf_enabled": false,
+      "mr_fail": {
+        "threshold": 0.45,
+        "threshold_locked": true
+      },
+      "us500": {
+        "mr_mode": "RESEARCH_ONLY"
+      },
+      "runner": {
+        "standalone_entry": false,
+        "research_exit_methods": [
+          "OSC_CROSS",
+          "HYBRID"
+        ]
+      },
+      "execution": {
+        "broker_enabled": false,
+        "manual_only": true
+      },
+      "model_freeze": {
+        "enabled": true
+      }
+    }
+  },
+  "package_versions": {
+    "pandas": "3.0.5",
+    "numpy": "2.5.2",
+    "scikit-learn": "1.9.0",
+    "yfinance": "1.7.0",
+    "joblib": "1.5.3",
+    "pyarrow": "25.0.1"
+  },
+  "model_version": "H1.0"
+}

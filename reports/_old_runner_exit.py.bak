@@ -1,0 +1,163 @@
+"""Phase G7 — Runner exit research (A/B/C comparison).
+
+Runner is a position-management state, not an entry engine. This research
+simulates exit management only, starting from MR trades that reached TP1
+(the runner transition point).
+
+Methods:
+  A — Fixed 2 ATR: exit at 2xATR(14) from runner transition price
+  B — Oscillator cross: long exits when Osc crosses below Signal;
+      short exits when Osc crosses above Signal (TradingView/M7 logic)
+  C — Hybrid: partial exit at 2 ATR, remainder at oscillator cross
+
+Simulation: bar-by-bar on 1H Yahoo data, entry-time info only, no look-ahead.
+"""
+from pathlib import Path
+import sys
+import numpy as np
+import pandas as pd
+
+ROOT = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(ROOT / "src"))
+
+from hybrid_ml.config import load_config
+from hybrid_ml.price_io import find_asset_price_file, load_price_csv
+from hybrid_ml.features import build_features, atr as atr_fn
+
+TP_MULT = 2.0          # method A / partial in C
+STOP_MULT = 1.5        # deterministic stop for all methods
+MAX_BARS = 200         # max holding period
+
+
+def simulate_runner(px_feat, entry_idx, direction, entry_price, atr_val, method):
+    """Simulate a runner position bar-by-bar from entry_idx.
+
+    Returns dict with return_pct, duration_bars, exit_reason.
+    Runner starts after MR TP1 (1 ATR profit) — entry here is the runner
+    transition point (entry_price + 1 ATR in trade direction).
+    """
+    n = len(px := px_feat)
+    high, low, close = px["high"].values, px["low"].values, px["close"].values
+    osc, sig = px["osc"].values, px["signal"].values
+
+    # runner "entry" = MR TP1 level (1 ATR from original entry)
+    run_entry = entry_price + direction * atr_val
+    stop = entry_price - direction * 1.0 * atr_val  # original MR stop
+    tp_full = run_entry + direction * TP_MULT * atr_val
+
+    for j in range(entry_idx + 1, min(entry_idx + 1 + MAX_BARS, n)):
+        bar = px.iloc[j]
+        # stop check first (conservative)
+        if (direction == 1 and bar_low(px, j) <= stop) or (direction == -1 and bar_high(px, j) >= stop):
+            return {"return_pct": (stop - run_entry) / run_entry * 100 * direction,
+                    "duration_bars": j - entry_idx, "exit_reason": "stop"}
+        if method == "A":
+            hit = (direction == 1 and bar_high(px, j) >= tp_full) or \
+                  (direction == -1 and bar_low(px, j) <= tp_full)
+            if hit:
+                return {"return_pct": (tp_full - run_entry) / run_entry * 100 * direction,
+                        "duration_bars": j - entry_idx, "exit_reason": "tp2atr"}
+        elif method in ("B", "C"):
+            crossed = (direction == 1 and osc[j - 1] >= sig[j - 1] and osc[j] < sig[j]) or \
+                      (direction == -1 and osc[j - 1] <= sig[j - 1] and osc[j] > sig[j])
+            if crossed:
+                px_exit = close[j]
+                ret = (px_exit - run_entry) / run_entry * 100 * direction
+                if method == "C":
+                    # half exited at 2 ATR, remainder at cross
+                    part1 = (tp_full - run_entry) / run_entry * 100
+                    return {"return_pct": 0.5 * (tp_full - run_entry) / run_entry * 100 +
+                                        0.5 * (px_exit - run_entry) / run_entry * 100,
+                            "exit_reason": "hybrid_cross",
+                            "duration_bars": j - entry_idx}
+                return {"return_pct": (px_exit - run_entry) / run_entry * 100,
+                        "duration_bars": j - entry_idx, "exit_reason": "osc_cross"}
+    # timeout
+    j = min(entry_idx + MAX_BARS, n - 1)
+    px_exit = close[j]
+    return {"return_pct": (px_exit - run_entry) / run_entry * 100,
+            "duration_bars": j - entry_idx, "exit_reason": "timeout"}
+
+
+def bar_high(px, i):
+    return px["high"].iloc[i]
+
+
+def bar_low(px, i):
+    return px["low"].iloc[i]
+
+
+def main():
+    cfg = load_config()
+    d = pd.read_parquet(ROOT / "data/ml_dataset.parquet")
+    runners = d[d.engine == "RUNNER"].dropna(subset=["return_pct"])
+    print(f"Runner exit research: {len(runners)} runner trades across "
+          f"{runners.asset.nunique()} assets\n")
+
+    rows = []
+    for asset, trades in runners.groupby("asset"):
+        try:
+            p = sorted((ROOT / "data/prices").glob(f"{asset}_1h_yahoo.csv"))[-1]
+            px = build_features(load_price_csv(p), cfg).reset_index(drop=True)
+        except Exception as e:
+            print(f"{asset}: skipped — {e}")
+            continue
+        px_t = px["timestamp"]
+        for _, t in trades.iterrows():
+            # find entry bar index by entry_time
+            idx = px.index[px_t(px) <= t.entry_time]
+            if len(idx) == 0:
+                continue
+            i = idx[-1]
+            if i >= len(px) - 2:
+                continue
+            direction = 1 if t.direction == "LONG" else -1
+            for method in ["A", "B", "C"]:
+                r = simulate(px, i, direction, float(t.entry_price), float(t.atr), method)
+                rows.append({"method": method, "asset": asset,
+                             "return_pct": round(r["return_pct"], 4),
+                             "duration_bars": r["duration_bars"],
+                             "exit_reason": r["exit_reason"]})
+
+    if not rows:
+        print("No runner trades simulated")
+        return
+    sim = pd.DataFrame(rows)
+    sim.to_csv(ROOT / "reports" / "runner_exit_ab_test.csv", index=False)
+
+    # per method/asset summary
+    def summarize(g):
+        ret = g["return_pct"]
+        wins, losses = ret[ret > 0], ret[ret <= 0]
+        eq = ret.cumsum()
+        return pd.Series({
+            "trades": len(g),
+            "win_rate": round(float((ret > 0).mean()), 4),
+            "avg_return_pct": round(float(ret.mean()), 4),
+            "median_return_pct": round(float(ret.median()), 4),
+            "profit_factor": round(float(wins.sum() / losses.abs().sum()), 3)
+                             if losses.abs().sum() > 0 else None,
+            "avg_winner_pct": round(float(wins.mean()), 4) if len(wins) else None,
+            "avg_loser_pct": round(float(losses.mean()), 4) if len(losses) else None,
+            "p90_winner": round(float(ret[ret > 0].quantile(0.9)), 4) if (ret > 0).any() else None,
+            "p95_winner": round(float(ret[ret > 0].quantile(0.95)), 4) if (ret > 0).any() else None,
+            "worst_trade": round(float(ret.min()), 4),
+            "max_drawdown": round(float((eq.cummax() - eq).max()), 3),
+            "avg_duration_bars": round(float(g["duration_bars"].mean()), 1),
+        })
+
+    summary = sim.groupby(["method", "asset"]).apply(summarize).reset_index()
+    pooled = sim.groupby("method").apply(summarize).reset_index()
+    pooled["asset"] = "POOLED"
+    out = pd.concat([summary, pooled], ignore_index=True)
+    out.to_csv(ROOT / "reports" / "runner_exit_ab_test.csv", index=False)
+    print("\n=== Runner exit A/B/C (per asset + pooled) ===")
+    print(summary.to_string(index=False))
+    print("\n=== Pooled ===")
+    print(pooled.to_string(index=False))
+    print("\nSaved reports/runner_exit_ab_test.csv")
+
+
+if __name__ == "__main__":
+    from hybrid_ml.price_io import load_price_csv
+    main()

@@ -1,0 +1,104 @@
+"""Phase G8 — latest-bar scoring redesign.
+
+Outputs model EVIDENCE per asset (not trade commands), combined with the
+current position state to derive an action:
+  WATCH_MR / MR_ENTRY / MR_BLOCK / HOLD_MR / MR_EXIT /
+  HOLD_RUNNER / EXIT_RUNNER / NO_ACTION
+
+Runner is never an entry: if state is FLAT, Runner output is research
+information only.
+"""
+from pathlib import Path
+import sys
+import pandas as pd
+
+ROOT = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(ROOT / "src"))
+
+from hybrid_ml.config import load_config
+from hybrid_ml.price_io import find_asset_price_file, load_price_csv
+from hybrid_ml.features import build_features
+from hybrid_ml.scoring import score_latest
+from hybrid_ml.positions import load_positions, get_state, MR_STATES, RUNNER_STATES
+
+
+def decide_action(state: str, scores: "pd.DataFrame", cfg) -> str:
+    """Map (position state, model evidence) -> action. Deterministic mapping."""
+    max_fail = float(cfg["decision"]["max_mr_fail_probability"])
+    mr = scores[scores.engine == "MR"]
+    rn = scores[scores.engine == "RUNNER"]
+
+    if state == "FLAT":
+        if len(mr) and mr.iloc[0]["decision"] == "TRADE":
+            return "MR_ENTRY"
+        if len(mr) and mr.iloc[0]["decision"] == "CAUTION":
+            return "WATCH_MR"
+        return "NO_ACTION"
+    if state in MR_STATES:
+        pf = float(mr.iloc[0].get("p_mr_fail", 0)) if len(mr) else 0.0
+        if pf > max_fail:
+            return "MR_EXIT"
+        return "HOLD_MR"
+    if state in RUNNER_STATES:
+        if len(rn) and rn.iloc[0]["decision"] == "TRADE" and \
+                float(rn.iloc[0]["expected_return_pct"]) > 0:
+            return "HOLD_RUNNER"
+        return "EXIT_RUNNER"
+    return "NO_ACTION"
+
+
+def main():
+    cfg = load_config()
+    positions = load_positions()
+    lines = []
+    print("Latest-bar model evidence (research output, not trade commands)\n")
+
+    for asset in cfg["assets"]:
+        try:
+            p = find_asset_price_file(ROOT / "data/prices", asset)
+            f = build_features(load_price_csv(p), cfg).dropna()
+            latest = f.iloc[[-1]]
+            r = latest.iloc[0]
+            s = score_latest(latest, ROOT / "models", cfg)
+            st = get_state(positions, asset)
+            action = decide_action(st["state"], s, cfg)
+
+            mr = s[s.engine == "MR"]
+            rn = s[s.engine == "RUNNER"]
+            print(f"=== {asset} ===  bar: {r['timestamp']}  close: {r['close']:.4f}  "
+                  f"state: {st['state']}")
+            pf = None
+            if len(mr):
+                pf = mr.iloc[0].get("p_mr_fail", None)
+                pf = float(pf) if pf == pf else None
+                print(f"  MR:     p_win={mr.iloc[0]['p_win']:.3f}  "
+                      f"p_fail={pf if pf is not None else float('nan'):.3f}  "
+                      f"E[r]={mr.iloc[0]['expected_return_pct']:+.3f}%  "
+                      f"model_decision={mr.iloc[0]['decision']}")
+            if len(rn):
+                note = " (research only — no position)" if st["state"] == "FLAT" else ""
+                print(f"  Runner: p_win={rn.iloc[0]['p_win']:.3f}  "
+                      f"E[r]={rn.iloc[0]['expected_return_pct']:+.3f}%  "
+                      f"model_decision={rn.iloc[0]['decision']}{note}")
+            print(f"  Action: {action}\n")
+            lines.append({
+                "asset": asset, "bar_time": str(r["timestamp"]),
+                "close": float(r["close"]), "state": st["state"],
+                "mr_p_win": float(mr.iloc[0]["p_win"]) if len(mr) else None,
+                "mr_p_fail": pf,
+                "mr_expected_return_pct": float(mr.iloc[0]["expected_return_pct"]) if len(mr) else None,
+                "mr_model_decision": mr.iloc[0]["decision"] if len(mr) else None,
+                "runner_p_win": float(rn.iloc[0]["p_win"]) if len(rn) else None,
+                "runner_expected_return_pct": float(rn.iloc[0]["expected_return_pct"]) if len(rn) else None,
+                "runner_model_decision": rn.iloc[0]["decision"] if len(rn) else None,
+                "action": action})
+        except Exception as e:
+            print(f"=== {asset} ===  ERROR: {e}\n")
+            lines.append({"asset": asset, "action": "ERROR", "error": str(e)})
+
+    pd.DataFrame(lines).to_csv(ROOT / "reports" / "latest_scores.csv", index=False)
+    print("Saved reports/latest_scores.csv")
+
+
+if __name__ == "__main__":
+    main()

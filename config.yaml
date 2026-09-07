@@ -1,0 +1,614 @@
+timeframe: "1h"
+
+core:
+  normalization_length: 70
+  oscillator_smoothing: 21
+  signal_length: 14
+  nw_bandwidth: 30
+  nw_lookback: 140
+
+features:
+  er_lengths: [10, 20, 40]
+  atr_length: 14
+  volatility_reference: 100
+  cross_lookback: 24
+  realized_vol_windows: [12, 24, 72]
+  momentum_windows: [3, 6, 12, 24]
+  slope_windows: [12, 24, 48]
+
+model:
+  random_state: 42
+  minimum_engine_rows: 40
+  validation_fraction: 0.20
+  test_fraction: 0.20
+
+decision:
+  min_probability: 0.55
+  caution_probability: 0.50
+  min_expected_return_pct: 0.00
+  max_mr_fail_probability: 0.45
+
+assets:
+  GOLD:
+    yahoo: "GC=F"
+    pepperstone: "XAUUSD"
+    asset_class: "METALS"
+    calendar: "CMEGlobex_GC"
+    universe_role: "core"
+    data_collection_enabled: true
+    forward_research_enabled: true
+    selection_enabled: true
+    estimated_round_trip_cost_pct: 0.00
+    ibkr: {secType: "CMDTY", symbol: "XAUUSD", exchange: "SMART", currency: "USD"}
+  USDJPY:
+    yahoo: "JPY=X"
+    pepperstone: "USDJPY"
+    asset_class: "FX"
+    calendar: "24/5"
+    universe_role: "core"
+    data_collection_enabled: true
+    forward_research_enabled: true
+    selection_enabled: true
+    estimated_round_trip_cost_pct: 0.00
+    ibkr: {secType: "CASH", symbol: "USD", exchange: "IDEALPRO", currency: "JPY"}
+  US500:
+    yahoo: "^GSPC"
+    pepperstone: "US500"
+    asset_class: "INDEX"
+    calendar: "NYSE"
+    universe_role: "core"
+    data_collection_enabled: true
+    forward_research_enabled: true
+    selection_enabled: true
+    estimated_round_trip_cost_pct: 0.00
+    ibkr: {secType: "IND", symbol: "SPX", exchange: "CBOE", currency: "USD"}
+  BTCUSD:
+    yahoo: "BTC-USD"
+    pepperstone: "BTCUSD"
+    asset_class: "CRYPTO"
+    calendar: "24/7"
+    universe_role: "core"
+    data_collection_enabled: true
+    forward_research_enabled: true
+    selection_enabled: true
+    estimated_round_trip_cost_pct: 0.00
+    ibkr: {secType: "CRYPTO", symbol: "BTC", exchange: "PAXOS", currency: "USD"}
+  ETHUSD:
+    yahoo: "ETH-USD"
+    pepperstone: "ETHUSD"
+    asset_class: "CRYPTO"
+    calendar: "24/7"
+    universe_role: "core"
+    data_collection_enabled: true
+    forward_research_enabled: true
+    selection_enabled: true
+    estimated_round_trip_cost_pct: 0.00
+    ibkr: {secType: "CRYPTO", symbol: "ETH", exchange: "PAXOS", currency: "USD"}
+  EURCAD:
+    yahoo: "EURCAD=X"
+    pepperstone: "EURCAD"
+    asset_class: "FX"
+    calendar: "24/5"
+    universe_role: "core"
+    data_collection_enabled: true
+    forward_research_enabled: true
+    selection_enabled: true
+    estimated_round_trip_cost_pct: 0.00
+    ibkr: {secType: "CASH", symbol: "EUR", exchange: "IDEALPRO", currency: "CAD"}
+
+  EURUSD:
+    yahoo: "EURUSD=X"
+    pepperstone: "EURUSD"
+    asset_class: "FX"
+    calendar: "24/5"
+    universe_role: "candidate"
+    data_collection_enabled: true
+    forward_research_enabled: false
+    selection_enabled: false
+    estimated_round_trip_cost_pct: 0.00
+  GBPUSD:
+    yahoo: "GBPUSD=X"
+    pepperstone: "GBPUSD"
+    asset_class: "FX"
+    calendar: "24/5"
+    universe_role: "candidate"
+    data_collection_enabled: true
+    forward_research_enabled: false
+    selection_enabled: false
+    estimated_round_trip_cost_pct: 0.00
+  AUDUSD:
+    yahoo: "AUDUSD=X"
+    pepperstone: "AUDUSD"
+    asset_class: "FX"
+    calendar: "24/5"
+    universe_role: "candidate"
+    data_collection_enabled: true
+    forward_research_enabled: false
+    selection_enabled: false
+    estimated_round_trip_cost_pct: 0.00
+  NZDUSD:
+    yahoo: "NZDUSD=X"
+    pepperstone: "NZDUSD"
+    asset_class: "FX"
+    calendar: "24/5"
+    universe_role: "candidate"
+    data_collection_enabled: true
+    forward_research_enabled: false
+    selection_enabled: false
+    estimated_round_trip_cost_pct: 0.00
+  USDCAD:
+    yahoo: "USDCAD=X"
+    pepperstone: "USDCAD"
+    asset_class: "FX"
+    calendar: "24/5"
+    universe_role: "candidate"
+    data_collection_enabled: true
+    forward_research_enabled: false
+    selection_enabled: false
+    estimated_round_trip_cost_pct: 0.00
+  USDCHF:
+    yahoo: "CHF=X"
+    pepperstone: "USDCHF"
+    asset_class: "FX"
+    calendar: "24/5"
+    universe_role: "candidate"
+    data_collection_enabled: true
+    forward_research_enabled: false
+    selection_enabled: false
+    estimated_round_trip_cost_pct: 0.00
+  EURJPY:
+    yahoo: "EURJPY=X"
+    pepperstone: "EURJPY"
+    asset_class: "FX"
+    calendar: "24/5"
+    universe_role: "candidate"
+    data_collection_enabled: true
+    forward_research_enabled: false
+    selection_enabled: false
+    estimated_round_trip_cost_pct: 0.00
+  GBPJPY:
+    yahoo: "GBPJPY=X"
+    pepperstone: "GBPJPY"
+    asset_class: "FX"
+    calendar: "24/5"
+    universe_role: "candidate"
+    data_collection_enabled: true
+    forward_research_enabled: false
+    selection_enabled: false
+    estimated_round_trip_cost_pct: 0.00
+  AUDJPY:
+    yahoo: "AUDJPY=X"
+    pepperstone: "AUDJPY"
+    asset_class: "FX"
+    calendar: "24/5"
+    universe_role: "candidate"
+    data_collection_enabled: true
+    forward_research_enabled: false
+    selection_enabled: false
+    estimated_round_trip_cost_pct: 0.00
+  CADJPY:
+    yahoo: "CADJPY=X"
+    pepperstone: "CADJPY"
+    asset_class: "FX"
+    calendar: "24/5"
+    universe_role: "candidate"
+    data_collection_enabled: true
+    forward_research_enabled: false
+    selection_enabled: false
+    estimated_round_trip_cost_pct: 0.00
+  CHFJPY:
+    yahoo: "CHFJPY=X"
+    pepperstone: "CHFJPY"
+    asset_class: "FX"
+    calendar: "24/5"
+    universe_role: "candidate"
+    data_collection_enabled: true
+    forward_research_enabled: false
+    selection_enabled: false
+    estimated_round_trip_cost_pct: 0.00
+  EURGBP:
+    yahoo: "EURGBP=X"
+    pepperstone: "EURGBP"
+    asset_class: "FX"
+    calendar: "24/5"
+    universe_role: "candidate"
+    data_collection_enabled: true
+    forward_research_enabled: false
+    selection_enabled: false
+    estimated_round_trip_cost_pct: 0.00
+  EURCHF:
+    yahoo: "EURCHF=X"
+    pepperstone: "EURCHF"
+    asset_class: "FX"
+    calendar: "24/5"
+    universe_role: "candidate"
+    data_collection_enabled: true
+    forward_research_enabled: false
+    selection_enabled: false
+    estimated_round_trip_cost_pct: 0.00
+  EURAUD:
+    yahoo: "EURAUD=X"
+    pepperstone: "EURAUD"
+    asset_class: "FX"
+    calendar: "24/5"
+    universe_role: "candidate"
+    data_collection_enabled: true
+    forward_research_enabled: false
+    selection_enabled: false
+    estimated_round_trip_cost_pct: 0.00
+  GBPAUD:
+    yahoo: "GBPAUD=X"
+    pepperstone: "GBPAUD"
+    asset_class: "FX"
+    calendar: "24/5"
+    universe_role: "candidate"
+    data_collection_enabled: true
+    forward_research_enabled: false
+    selection_enabled: false
+    estimated_round_trip_cost_pct: 0.00
+  GBPCAD:
+    yahoo: "GBPCAD=X"
+    pepperstone: "GBPCAD"
+    asset_class: "FX"
+    calendar: "24/5"
+    universe_role: "candidate"
+    data_collection_enabled: true
+    forward_research_enabled: false
+    selection_enabled: false
+    estimated_round_trip_cost_pct: 0.00
+  GBPCHF:
+    yahoo: "GBPCHF=X"
+    pepperstone: "GBPCHF"
+    asset_class: "FX"
+    calendar: "24/5"
+    universe_role: "candidate"
+    data_collection_enabled: true
+    forward_research_enabled: false
+    selection_enabled: false
+    estimated_round_trip_cost_pct: 0.00
+  AUDCAD:
+    yahoo: "AUDCAD=X"
+    pepperstone: "AUDCAD"
+    asset_class: "FX"
+    calendar: "24/5"
+    universe_role: "candidate"
+    data_collection_enabled: true
+    forward_research_enabled: false
+    selection_enabled: false
+    estimated_round_trip_cost_pct: 0.00
+  AUDNZD:
+    yahoo: "AUDNZD=X"
+    pepperstone: "AUDNZD"
+    asset_class: "FX"
+    calendar: "24/5"
+    universe_role: "candidate"
+    data_collection_enabled: true
+    forward_research_enabled: false
+    selection_enabled: false
+    estimated_round_trip_cost_pct: 0.00
+  AUDCHF:
+    yahoo: "AUDCHF=X"
+    pepperstone: "AUDCHF"
+    asset_class: "FX"
+    calendar: "24/5"
+    universe_role: "candidate"
+    data_collection_enabled: true
+    forward_research_enabled: false
+    selection_enabled: false
+    estimated_round_trip_cost_pct: 0.00
+  NZDJPY:
+    yahoo: "NZDJPY=X"
+    pepperstone: "NZDJPY"
+    asset_class: "FX"
+    calendar: "24/5"
+    universe_role: "candidate"
+    data_collection_enabled: true
+    forward_research_enabled: false
+    selection_enabled: false
+    estimated_round_trip_cost_pct: 0.00
+  NZDCAD:
+    yahoo: "NZDCAD=X"
+    pepperstone: "NZDCAD"
+    asset_class: "FX"
+    calendar: "24/5"
+    universe_role: "candidate"
+    data_collection_enabled: true
+    forward_research_enabled: false
+    selection_enabled: false
+    estimated_round_trip_cost_pct: 0.00
+  NZDCHF:
+    yahoo: "NZDCHF=X"
+    pepperstone: "NZDCHF"
+    asset_class: "FX"
+    calendar: "24/5"
+    universe_role: "candidate"
+    data_collection_enabled: true
+    forward_research_enabled: false
+    selection_enabled: false
+    estimated_round_trip_cost_pct: 0.00
+  CADCHF:
+    yahoo: "CADCHF=X"
+    pepperstone: "CADCHF"
+    asset_class: "FX"
+    calendar: "24/5"
+    universe_role: "candidate"
+    data_collection_enabled: true
+    forward_research_enabled: false
+    selection_enabled: false
+    estimated_round_trip_cost_pct: 0.00
+
+  SILVER:
+    yahoo: "SI=F"
+    pepperstone: "XAGUSD"
+    asset_class: "METALS"
+    calendar: "CMEGlobex_GC"
+    universe_role: "candidate"
+    data_collection_enabled: true
+    forward_research_enabled: false
+    selection_enabled: false
+    estimated_round_trip_cost_pct: 0.00
+  WTI:
+    yahoo: "CL=F"
+    pepperstone: "XTIUSD"
+    asset_class: "ENERGY"
+    calendar: "CMEGlobex_Energy"
+    universe_role: "candidate"
+    data_collection_enabled: true
+    forward_research_enabled: false
+    selection_enabled: false
+    estimated_round_trip_cost_pct: 0.00
+  BRENT:
+    yahoo: "BZ=F"
+    pepperstone: "XBRUSD"
+    asset_class: "ENERGY"
+    calendar: "CMEGlobex_Energy"
+    universe_role: "candidate"
+    data_collection_enabled: true
+    forward_research_enabled: false
+    selection_enabled: false
+    estimated_round_trip_cost_pct: 0.00
+  NATGAS:
+    yahoo: "NG=F"
+    pepperstone: "XNGUSD"
+    asset_class: "ENERGY"
+    calendar: "CMEGlobex_Energy"
+    universe_role: "candidate"
+    data_collection_enabled: true
+    forward_research_enabled: false
+    selection_enabled: false
+    estimated_round_trip_cost_pct: 0.00
+
+  NAS100:
+    yahoo: "^IXIC"
+    pepperstone: "NAS100"
+    asset_class: "INDEX"
+    calendar: "NYSE"
+    universe_role: "candidate"
+    data_collection_enabled: true
+    forward_research_enabled: false
+    selection_enabled: false
+    estimated_round_trip_cost_pct: 0.00
+  US30:
+    yahoo: "^DJI"
+    pepperstone: "US30"
+    asset_class: "INDEX"
+    calendar: "NYSE"
+    universe_role: "candidate"
+    data_collection_enabled: true
+    forward_research_enabled: false
+    selection_enabled: false
+    estimated_round_trip_cost_pct: 0.00
+  GER40:
+    yahoo: "^GDAXI"
+    pepperstone: "GER40"
+    asset_class: "INDEX"
+    calendar: "XETR"
+    universe_role: "candidate"
+    data_collection_enabled: true
+    forward_research_enabled: false
+    selection_enabled: false
+    estimated_round_trip_cost_pct: 0.00
+  UK100:
+    yahoo: "^FTSE"
+    pepperstone: "UK100"
+    asset_class: "INDEX"
+    calendar: "XLON"
+    universe_role: "candidate"
+    data_collection_enabled: true
+    forward_research_enabled: false
+    selection_enabled: false
+    estimated_round_trip_cost_pct: 0.00
+  JPN225:
+    yahoo: "^N225"
+    pepperstone: "JPN225"
+    asset_class: "INDEX"
+    calendar: "JPX"
+    universe_role: "candidate"
+    data_collection_enabled: true
+    forward_research_enabled: false
+    selection_enabled: false
+    estimated_round_trip_cost_pct: 0.00
+  AUS200:
+    yahoo: "^AXJO"
+    pepperstone: "AUS200"
+    asset_class: "INDEX"
+    calendar: "ASX"
+    universe_role: "candidate"
+    data_collection_enabled: true
+    forward_research_enabled: false
+    selection_enabled: false
+    estimated_round_trip_cost_pct: 0.00
+  HK50:
+    yahoo: "^HSI"
+    pepperstone: "HK50"
+    asset_class: "INDEX"
+    calendar: "XHKG"
+    universe_role: "candidate"
+    data_collection_enabled: true
+    forward_research_enabled: false
+    selection_enabled: false
+    estimated_round_trip_cost_pct: 0.00
+  FRA40:
+    yahoo: "^FCHI"
+    pepperstone: "FRA40"
+    asset_class: "INDEX"
+    calendar: "XPAR"
+    universe_role: "candidate"
+    data_collection_enabled: true
+    forward_research_enabled: false
+    selection_enabled: false
+    estimated_round_trip_cost_pct: 0.00
+  EU50:
+    yahoo: "^STOXX50E"
+    pepperstone: "EU50"
+    asset_class: "INDEX"
+    calendar: "XPAR"
+    universe_role: "candidate"
+    data_collection_enabled: true
+    forward_research_enabled: false
+    selection_enabled: false
+    estimated_round_trip_cost_pct: 0.00
+
+  SOLUSD:
+    yahoo: "SOL-USD"
+    pepperstone: "SOLUSD"
+    asset_class: "CRYPTO"
+    calendar: "24/7"
+    universe_role: "candidate"
+    data_collection_enabled: true
+    forward_research_enabled: false
+    selection_enabled: false
+    estimated_round_trip_cost_pct: 0.00
+  XRPUSD:
+    yahoo: "XRP-USD"
+    pepperstone: "XRPUSD"
+    asset_class: "CRYPTO"
+    calendar: "24/7"
+    universe_role: "candidate"
+    data_collection_enabled: true
+    forward_research_enabled: false
+    selection_enabled: false
+    estimated_round_trip_cost_pct: 0.00
+  ADAUSD:
+    yahoo: "ADA-USD"
+    pepperstone: "ADAUSD"
+    asset_class: "CRYPTO"
+    calendar: "24/7"
+    universe_role: "candidate"
+    data_collection_enabled: true
+    forward_research_enabled: false
+    selection_enabled: false
+    estimated_round_trip_cost_pct: 0.00
+  DOGEUSD:
+    yahoo: "DOGE-USD"
+    pepperstone: "DOGEUSD"
+    asset_class: "CRYPTO"
+    calendar: "24/7"
+    universe_role: "candidate"
+    data_collection_enabled: true
+    forward_research_enabled: false
+    selection_enabled: false
+    estimated_round_trip_cost_pct: 0.00
+  LTCUSD:
+    yahoo: "LTC-USD"
+    pepperstone: "LTCUSD"
+    asset_class: "CRYPTO"
+    calendar: "24/7"
+    universe_role: "candidate"
+    data_collection_enabled: true
+    forward_research_enabled: false
+    selection_enabled: false
+    estimated_round_trip_cost_pct: 0.00
+  BCHUSD:
+    yahoo: "BCH-USD"
+    pepperstone: "BCHUSD"
+    asset_class: "CRYPTO"
+    calendar: "24/7"
+    universe_role: "candidate"
+    data_collection_enabled: true
+    forward_research_enabled: false
+    selection_enabled: false
+    estimated_round_trip_cost_pct: 0.00
+  DOTUSD:
+    yahoo: "DOT-USD"
+    pepperstone: "DOTUSD"
+    asset_class: "CRYPTO"
+    calendar: "24/7"
+    universe_role: "candidate"
+    data_collection_enabled: true
+    forward_research_enabled: false
+    selection_enabled: false
+    estimated_round_trip_cost_pct: 0.00
+  LINKUSD:
+    yahoo: "LINK-USD"
+    pepperstone: "LINKUSD"
+    asset_class: "CRYPTO"
+    calendar: "24/7"
+    universe_role: "candidate"
+    data_collection_enabled: true
+    forward_research_enabled: false
+    selection_enabled: false
+    estimated_round_trip_cost_pct: 0.00
+  BNBUSD:
+    yahoo: "BNB-USD"
+    pepperstone: "BNBUSD"
+    asset_class: "CRYPTO"
+    calendar: "24/7"
+    universe_role: "candidate"
+    data_collection_enabled: true
+    forward_research_enabled: false
+    selection_enabled: false
+    estimated_round_trip_cost_pct: 0.00
+  AVAXUSD:
+    yahoo: "AVAX-USD"
+    pepperstone: "AVAXUSD"
+    asset_class: "CRYPTO"
+    calendar: "24/7"
+    universe_role: "candidate"
+    data_collection_enabled: true
+    forward_research_enabled: false
+    selection_enabled: false
+    estimated_round_trip_cost_pct: 0.00
+
+# ============================================================
+# PHASE H — FROZEN FORWARD VALIDATION (do not modify during H)
+# ============================================================
+phase_h:
+  enabled: true
+  automatic_retraining: false
+  tf_enabled: false
+  mr_fail:
+    threshold: 0.45
+    threshold_locked: true
+  us500:
+    mr_mode: "RESEARCH_ONLY"
+  runner:
+    standalone_entry: false
+    research_exit_methods: ["OSC_CROSS", "HYBRID"]
+  execution:
+    broker_enabled: false
+    manual_only: true
+  model_freeze:
+    enabled: true
+
+asset_classes:
+  GOLD: METALS
+  USDJPY: FX
+  EURCAD: FX
+  US500: INDEX
+  BTCUSD: CRYPTO
+  ETHUSD: CRYPTO
+
+class_policy:
+  METALS: {mr_enabled: true, runner_research: true}
+  FX: {mr_enabled: true, runner_research: true}
+  CRYPTO: {mr_enabled: true, runner_research: true}
+  INDEX: {mr_enabled: false, research_only: true}
+
+forward_validation:
+  minimum_calendar_days: 28
+  preferred_calendar_days: 56
+  minimum_mr_candidates: 30
+  preferred_mr_candidates: 60
+  minimum_runner_events: 20
+  preferred_runner_events: 40

@@ -1,0 +1,9 @@
+{
+  "_comment": "Current position state per asset. States: FLAT | MR_LONG | MR_SHORT | RUNNER_LONG | RUNNER_SHORT. Runner can ONLY exist after an MR trade reached its transition point. Update this file manually after each executed trade.",
+  "GOLD": {"state": "FLAT"},
+  "USDJPY": {"state": "FLAT"},
+  "US500": {"state": "FLAT"},
+  "BTCUSD": {"state": "FLAT"},
+  "ETHUSD": {"state": "FLAT"},
+  "EURCAD": {"state": "FLAT"}
+}

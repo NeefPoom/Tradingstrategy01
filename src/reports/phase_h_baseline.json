@@ -1,0 +1,52 @@
+{
+  "phase_h_start": "2026-08-30T10:54:38.480788+00:00",
+  "models": {},
+  "mr_fail_threshold": 0.45,
+  "tf_enabled": false,
+  "data_source": "yahoo",
+  "automatic_retraining": false,
+  "feature_columns": [],
+  "config_snapshot": {
+    "decision": {
+      "min_probability": 0.55,
+      "caution_probability": 0.5,
+      "min_expected_return_pct": 0.0,
+      "max_mr_fail_probability": 0.45
+    },
+    "phase_h": {
+      "enabled": true,
+      "automatic_retraining": false,
+      "tf_enabled": false,
+      "mr_fail": {
+        "threshold": 0.45,
+        "threshold_locked": true
+      },
+      "us500": {
+        "mr_mode": "RESEARCH_ONLY"
+      },
+      "runner": {
+        "standalone_entry": false,
+        "research_exit_methods": [
+          "OSC_CROSS",
+          "HYBRID"
+        ]
+      },
+      "execution": {
+        "broker_enabled": false,
+        "manual_only": true
+      },
+      "model_freeze": {
+        "enabled": true
+      }
+    }
+  },
+  "package_versions": {
+    "pandas": "3.0.5",
+    "numpy": "2.5.2",
+    "scikit-learn": "1.9.0",
+    "yfinance": "1.7.0",
+    "joblib": "1.5.3",
+    "pyarrow": "25.0.1"
+  },
+  "model_version": "H1.0"
+}

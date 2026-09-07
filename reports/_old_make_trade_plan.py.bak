@@ -1,0 +1,110 @@
+"""Phase F — deterministic trade-plan generator (manual execution).
+
+Converts eligible signals from score_all_latest into a concrete trade plan.
+Risk rules are DETERMINISTIC (fixed ATR multiples from config); the ML layer
+only decides WHICH engine trades and WHEN. No broker connection — output is
+a plan for manual execution.
+
+Deterministic risk rules (from config.decision + features.atr_length):
+  stop  = 1.5 x ATR(14)  against direction
+  tp1   = 1.0 x ATR(14)   (MR takes partial at TP1, per research)
+  runner TP = 2.5 x ATR(14)
+  risk per trade = fixed fraction of equity (default 0.5%)
+"""
+from pathlib import Path
+import sys, math, json
+ROOT = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(ROOT / "src"))
+
+from hybrid_ml.config import load_config
+from hybrid_ml.price_io import find_asset_price_file, load_price_csv
+from hybrid_ml.features import build_features
+from hybrid_ml.scoring import score_latest
+
+# --- deterministic risk parameters (edit here or move to config.yaml) ---
+STOP_ATR = 1.5
+TP_MR_ATR = 1.0        # MR TP1
+TP_RUNNER_ATR = 2.0
+RISK_PCT = 0.005       # 0.5% equity risk per trade
+ACCOUNT_EQUITY = 10_000.0
+
+
+def build_plan(asset, row, scores, cfg):
+    """row: latest feature row; scores: DataFrame from score_latest."""
+    atr = float(row["atr"])
+    close = float(row["close"])
+    plans = []
+    for _, s in scores.iterrows():
+        if s["decision"] != "TRADE":
+            continue
+        eng = s["engine"]
+        if eng == "TF":
+            continue  # TF rejected in Phase C — never trade
+        # Direction: deterministic from oscillator state (research rule:
+        # MR fades extremes, Runner follows momentum)
+        if eng == "MR":
+            direction = "SHORT" if row["osc"] > 0 else "LONG"
+            tp_mult = TP_MR_ATR
+        else:  # RUNNER
+            direction = "LONG" if row["osc"] > row["signal"] else "SHORT"
+            tp_mult = TP_RUNNER_ATR
+        entry = close
+        stop = entry - STOP_ATR * atr if direction == "LONG" else entry + STOP_ATR * atr
+        tp = entry + tp_mult * atr if direction == "LONG" else entry - tp_mult * atr
+        risk_per_unit = abs(entry - stop)
+        size = (ACCOUNT_EQUITY * RISK_PCT) / risk_per_unit if risk_per_unit > 0 else 0
+        plans.append({
+            "asset": asset, "engine": eng, "direction": direction,
+            "entry": round(entry, 5), "stop": round(stop, 5), "tp": round(tp, 5),
+            "atr": round(atr, 5), "size": round(size, 4),
+            "risk_pct": RISK_PCT * 100, "p_win": round(float(s["p_win"]), 3),
+            "exp_ret_pct": round(float(s["expected_return_pct"]), 3),
+            "p_mr_fail": round(float(s.get("p_mr_fail", float("nan"))), 3)
+                         if "p_mr_fail" in s and s.get("p_mr_fail") == s.get("p_mr_fail") else None,
+        })
+    return plans
+
+
+def main():
+    cfg = load_config()
+    all_plans = []
+    print(f"TRADE PLAN — deterministic risk rules, manual execution\n")
+    print(f"Rules: stop={STOP_ATR}xATR, MR TP={TP_MR_ATR}xATR, Runner TP={TP_RUNNER_ATR}xATR, "
+          f"risk={RISK_PCT*100:.1f}% of ${ACCOUNT_EQUITY:,.0f}\n")
+
+    for asset in cfg["assets"]:
+        try:
+            p = find_asset_price_file(ROOT / "data/prices", asset)
+            f = build_features(load_price_csv(p), cfg).dropna()
+            latest = f.iloc[[-1]]
+            r = latest.iloc[0]
+            s = score_latest(latest, ROOT / "models", cfg)
+            plans = build_plan(asset, r, s, cfg)
+            if plans:
+                for pl in plans:
+                    all_plans.append(pl)
+                    print(f"[{pl['engine']}] {asset} {pl['direction']}")
+                    print(f"  entry {pl['entry']}  stop {pl['stop']}  TP {pl['tp']}")
+                    print(f"  size {pl['size']} units (risk {pl['risk_pct']}% = "
+                          f"${ACCOUNT_EQUITY*RISK_PCT:.0f})  p_win {pl['p_win']}  "
+                          f"E[r] {pl['exp_ret_pct']}%")
+                    if pl["p_mr_fail"] is not None:
+                        print(f"  p_mr_fail {pl['p_mr_fail']}")
+                    print()
+            else:
+                print(f"[{asset}] no eligible engine — stay flat\n")
+        except Exception as e:
+            print(f"[{asset}] ERROR: {e}\n")
+
+    if all_plans:
+        import pandas as pd
+        df = pd.DataFrame(all_plans)
+        out = ROOT / "reports" / "trade_plan_latest.csv"
+        df.to_csv(out, index=False)
+        print(f"Plan saved to {out} ({len(df)} trades)")
+    else:
+        print("No trades — portfolio OFF.")
+
+
+if __name__ == "__main__":
+    main()

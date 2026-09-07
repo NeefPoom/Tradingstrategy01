@@ -1,0 +1,44 @@
+"""Phase E — score the latest completed 1H bar for all assets.
+
+Uses the newest price CSV per asset (Yahoo proxy for IBKR until TWS/Gateway
+is available). Scores the latest COMPLETED bar (drops the last row if it is
+the still-forming bar) and prints TRADE / CAUTION / OFF per engine.
+"""
+from pathlib import Path
+import sys
+ROOT = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(ROOT / "src"))
+
+from hybrid_ml.config import load_config
+from hybrid_ml.price_io import find_asset_price_file, load_price_csv
+from hybrid_ml.features import build_features
+from hybrid_ml.scoring import score_latest
+
+
+def main():
+    cfg = load_config()
+    assets = list(cfg["assets"].keys())
+    print(f"Scoring latest completed 1H bar for {len(assets)} assets\n")
+
+    for asset in assets:
+        try:
+            p = find_asset_price_file(ROOT / "data/prices", asset)
+            px = load_price_csv(p)
+            f = build_features(px, cfg).dropna()
+            # latest completed bar = last row of feature frame
+            latest = f.iloc[[-1]]
+            r = latest.iloc[0]
+            print(f"=== {asset} ===  bar: {r['timestamp']}  close: {r['close']:.4f}")
+            print(f"  ER20: {r.get('er_20', float('nan')):.3f}  NATR: {r['natr']:.3f}  "
+                  f"VolRatio: {r['vol_ratio']:.3f}  Osc: {r['osc']:.3f}")
+            s = score_latest(latest, ROOT / "models", cfg)
+            print(s.to_string(index=False))
+            # portfolio-level summary line
+            trades = s[s.decision == "TRADE"]["engine"].tolist()
+            print(f"  -> {'TRADE: ' + ', '.join(trades) if len(trades) else 'OFF (no engine eligible)'}\n")
+        except Exception as e:
+            print(f"=== {asset} ===  ERROR: {e}\n")
+
+
+if __name__ == "__main__":
+    main()

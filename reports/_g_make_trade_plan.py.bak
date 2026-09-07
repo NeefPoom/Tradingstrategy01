@@ -1,0 +1,119 @@
+"""Phase G9 — trade plan redesign (state-driven, manual execution).
+
+Actions: WATCH_MR | MR_ENTRY | MR_BLOCK | HOLD_MR | MR_EXIT |
+         HOLD_RUNNER | EXIT_RUNNER | NO_ACTION
+
+Removed: RUNNER_ENTRY, TF_ENTRY (Runner is position management only;
+TF disabled until enough sample).
+
+Deterministic risk rules preserved, but stop method is configurable:
+  risk.stop_mode: "atr_fixed" (1.5 ATR) | "research_only"
+Until Phase G stop research is validated cross-asset, plans flag
+MANUAL_STOP_REQUIRED when stop_mode is "research_only".
+"""
+from pathlib import Path
+import sys
+import pandas as pd
+
+ROOT = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(ROOT / "src"))
+
+from hybrid_ml.config import load_config
+from hybrid_ml.price_io import find_asset_price_file, load_price_csv
+from hybrid_ml.features import build_features
+from hybrid_ml.scoring import score_latest
+from hybrid_ml.positions import load_positions, get_state, MR_STATES, RUNNER_STATES
+
+# --- deterministic risk parameters ---
+RISK_PER_TRADE_PCT = 0.5      # % equity risk per trade (hard cap)
+ACCOUNT_EQUITY = 10_000.0
+STOP_MODE = "research_only"   # "atr_fixed" uses 1.5xATR; "research_only" flags manual
+STOP_ATR = 1.5                # only used when STOP_MODE == "atr_fixed"
+STOP_MODE_DESC = ("1.5xATR fixed" if STOP_MODE == "atr_fixed"
+                  else "research_only — MANUAL_STOP_REQUIRED until validated")
+VALID_ACTIONS = {"WATCH_MR", "MR_ENTRY", "MR_BLOCK", "HOLD_MR", "MR_EXIT",
+                 "HOLD_RUNNER", "EXIT_RUNNER", "NO_ACTION"}
+
+
+def decide_action(state, scores, cfg):
+    """Map (position state, model evidence) -> action. Same logic as G8."""
+    max_fail = float(cfg["decision"]["max_mr_fail_probability"])
+    mr = scores[scores.engine == "MR"]
+    rn = scores[scores.engine == "RUNNER"]
+
+    if state == "FLAT":
+        if len(mr) and mr.iloc[0]["decision"] == "TRADE":
+            return "MR_ENTRY"
+        if len(mr) and mr.iloc[0]["decision"] == "CAUTION":
+            return "WATCH_MR"
+        return "NO_ACTION"
+    if state in MR_STATES:
+        pf = float(mr.iloc[0].get("p_mr_fail", 0)) if len(mr) else 0.0
+        return "MR_EXIT" if pf > max_fail else "HOLD_MR"
+    if state in RUNNER_STATES:
+        if len(rn) and rn.iloc[0]["decision"] == "TRADE" and \
+                float(rn.iloc[0]["expected_return_pct"]) > 0:
+            return "HOLD_RUNNER"
+        return "EXIT_RUNNER"
+    return "NO_ACTION"
+
+
+def main():
+    cfg = load_config()
+    positions = load_positions()
+    plans = []
+    print("TRADE PLAN — state-driven, manual execution only\n")
+    print(f"Risk: {RISK_PER_TRADE_PCT}% of ${ACCOUNT_EQUITY:,.0f} per trade | "
+          f"stop_mode: {STOP_MODE_DESC}\n")
+
+    for asset in cfg["assets"]:
+        try:
+            p = find_asset_price_file(ROOT / "data/prices", asset)
+            f = build_features(load_price_csv(p), cfg).dropna()
+            latest = f.iloc[[-1]]
+            r = latest.iloc[0]
+            s = score_latest(latest, ROOT / "models", cfg)
+            st = get_state(positions, asset)
+            action = decide_action(st["state"], s, cfg)
+            atr = float(r["atr"])
+            close = float(r["close"])
+
+            print(f"[{asset}] state={st['state']}  action={action}")
+            plan = {"asset": asset, "state": st["state"], "action": action,
+                    "bar_time": str(r["timestamp"]), "close": close}
+
+            if action == "MR_ENTRY":
+                direction = "SHORT" if r["osc"] > 0 else "LONG"
+                plan = {"asset": asset, "action": action, "direction": direction,
+                        "entry": round(close, 5),
+                        "stop": None, "tp": None,
+                        "stop_flag": "MANUAL_STOP_REQUIRED" if STOP_MODE == "research_only"
+                                     else "ATR_STOP",
+                        "risk_pct": RISK_PER_TRADE_PCT,
+                        "mr_p_fail": float(s[s.engine == "MR"].iloc[0].get("p_mr_fail", float("nan")))}
+                if STOP_MODE == "atr_fixed":
+                    sign = 1 if direction == "LONG" else -1
+                    plan["stop"] = round(close - sign * STOP_ATR * atr, 5)
+                plans.append(plan)
+                print(f"  MR {direction} entry ~{close:.4f}  "
+                      f"stop: {plan['stop'] if plan['stop'] else 'MANUAL — research pending'}  "
+                      f"p_fail={plan['mr_p_fail']:.3f}")
+            elif action in ("HOLD_RUNNER", "EXIT_RUNNER", "HOLD_MR", "MR_EXIT", "WATCH_MR"):
+                print(f"  position management action — no new entry")
+            else:
+                print(f"  no action")
+            print()
+            plans.append(plan)
+        except Exception as e:
+            print(f"[{asset}] ERROR: {e}\n")
+
+    import pandas as pd
+    df = pd.DataFrame(plans)
+    df.to_csv(ROOT / "reports" / "trade_plan_latest.csv", index=False)
+    n_trades = int((df.action == "MR_ENTRY").sum()) if len(df) else 0
+    print(f"Saved reports/trade_plan_latest.csv ({n_trades} actionable entries, "
+          f"{len(df)} assets)")
+
+
+if __name__ == "__main__":
+    main()

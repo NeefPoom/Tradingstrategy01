@@ -1,0 +1,131 @@
+"""Phase G2 — price data quality report.
+
+Checks every data/prices/{ASSET}_1h_yahoo.csv for:
+duplicates, missing bars, zero volume, bad OHLC, bar-gap statistics.
+Writes reports/price_quality.csv with PASS/WARNING/FAIL status.
+"""
+from pathlib import Path
+import sys
+import numpy as np
+import pandas as pd
+
+ROOT = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(ROOT / "src"))
+
+from hybrid_ml.config import load_config
+from hybrid_ml.price_io import load_price_csv
+
+# Expected bar interval per asset class (hours). Crypto trades 24/7;
+# FX ~24x5; futures/index have session breaks so gaps are expected.
+EXPECTED_INTERVAL_H = 1.0
+
+
+def quality_report(df: "pd.DataFrame") -> dict:
+    """Compute quality metrics for a normalized OHLCV frame."""
+    x = df.sort_values("timestamp").reset_index(drop=True)
+    n = len(x)
+    dup = int(x["timestamp"].duplicated().sum())
+
+    gaps = x["timestamp"].diff().dt.total_seconds() / 3600.0
+    gaps = gaps.dropna()
+    med_gap = float(gaps.median()) if len(gaps) else float("nan")
+    max_gap = float(gaps.max()) if len(gaps) else float("nan")
+
+    # missing-bar estimate: gaps > 1.5h count as missing bars (sessions excluded
+    # from FAIL but reported)
+    missing = int((gaps > 1.5 * EXPECTED_INTERVAL_H).sum())
+    zero_vol = int((x["volume"] == 0).sum())
+    bad_ohlc = int(((x["high"] < x["low"]) | (x["close"] <= 0) |
+                    x[["open", "high", "low", "close"]].isna().any(axis=1)).sum())
+
+    if n == 0:
+        status = "FAIL"
+    elif bad_ohlc > 0 or dup > 0:
+        status = "FAIL"
+    elif missing > max(10, n * 0.05) or max_gap > 72:
+        status = "WARNING"
+    else:
+        status = "PASS"
+
+    return {
+        "asset": "",  # filled by caller
+        "rows": n,
+        "first_timestamp": str(x["timestamp"].iloc[0]) if n else "",
+        "last_timestamp": str(x["timestamp"].iloc[-1]) if n else "",
+        "duplicate_count": dup,
+        "missing_bar_estimate": missing,
+        "zero_volume_count": int((x["volume"] == 0).sum()),
+        "bad_ohlc_count": int(bad_ohlc),
+        "median_bar_gap_hours": round(float(gaps.median()) if len(gaps) else 0, 3),
+        "max_bar_gap_hours": round(max_gap, 2) if len(gaps) else 0,
+        "status": status,
+    }
+
+
+def main():
+    cfg = load_config()
+    prices = ROOT / "data" / "prices"
+    rows = []
+    for asset in cfg["assets"]:
+        matches = sorted(prices.glob(f"{asset}_1h_yahoo.csv"))
+        if not matches:
+            rows.append({"asset": asset, "rows": 0, "status": "FAIL"})
+            print(f"{asset}: NO PRICE FILE")
+            continue
+        try:
+            df = load_price_csv(matches[-1])
+        except Exception as e:
+            rows.append({"asset": asset, "rows": 0, "status": "FAIL"})
+            print(f"{asset}: unreadable — {e}")
+            continue
+        m = quality_metrics(df)
+        m["asset"] = asset
+        rows.append(m)
+        print(f"{asset}: {m['rows']} rows  {m['first_timestamp']} → {m['last_timestamp']}  "
+              f"dup={m['duplicate_count']} missing~{m['missing_bar_estimate']} "
+              f"badOHLC={m['bad_ohlc_count']} maxGap={m['max_bar_gap_hours']}h  → {m['status']}")
+
+    out = pd.DataFrame(rows)
+    out.to_csv(ROOT / "reports" / "price_quality.csv", index=False)
+    print(f"\nSaved reports/price_quality.csv ({len(out)} assets)")
+
+
+# alias used above
+quality_metrics = None  # replaced below
+
+
+def quality_metrics(df):
+    """Compute quality metrics for one normalized OHLCV frame."""
+    x = df.sort_values("timestamp").reset_index(drop=True)
+    n = len(x)
+    dup = int(x["timestamp"].duplicated().sum())
+    gaps = x["timestamp"].diff().dt.total_seconds().div(3600).dropna()
+    missing = int((gaps > 1.5).sum())
+    bad_ohlc = int(((x["high"] < x["low"]) | (x["close"] <= 0) |
+                    x[["open", "high", "low", "close"]].isna().any(axis=1)).sum())
+    max_gap = float(gaps.max()) if len(gaps) else 0.0
+    med_gap = float(gaps.median()) if len(gaps) else 0.0
+
+    if n == 0 or bad_ohlc > 0 or dup > 0:
+        status = "FAIL"
+    elif missing > max(10, n * 0.05) or max_gap > 72:
+        status = "WARNING"
+    else:
+        status = "PASS"
+
+    return {"rows": n,
+            "first_timestamp": str(x["timestamp"].iloc[0]) if n else "",
+            "last_timestamp": str(x["timestamp"].iloc[-1]) if n else "",
+            "duplicate_count": dup,
+            "missing_bar_estimate": missing,
+            "zero_volume_count": int((x["volume"] == 0).sum()),
+            "bad_ohlc_count": bad_ohlc,
+            "median_bar_gap_hours": round(med_gap, 3),
+            "max_bar_gap_hours": round(max_gap, 2),
+            "status": status}
+
+
+import pandas as pd  # noqa: E402  (used by quality_metrics and main)
+
+if __name__ == "__main__":
+    main()

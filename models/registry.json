@@ -1,0 +1,8 @@
+{
+  "phase_h_baseline": {
+    "version": "H1.0",
+    "trained_before": "2026-08-30",
+    "mr_fail_threshold": 0.45,
+    "active": true
+  }
+}
