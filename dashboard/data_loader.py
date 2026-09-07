@@ -149,6 +149,7 @@ def load_asset_registry() -> pd.DataFrame:
                 "yahoo_symbol": meta.get("yahoo", ""),
                 "pepperstone_symbol": meta.get("pepperstone", asset),
                 "calendar": meta.get("calendar", ""),
+                "forward_start_utc": meta.get("forward_start_utc", ""),
                 "data_collection_enabled": bool(meta.get("data_collection_enabled", True)),
                 "forward_research_enabled": bool(meta.get("forward_research_enabled", True)),
                 "selection_enabled": bool(meta.get("selection_enabled", True)),

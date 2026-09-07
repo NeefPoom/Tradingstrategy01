@@ -80,7 +80,17 @@ def _phase_start_floor(baseline) -> pd.Timestamp | None:
     return ts.floor("h")
 
 
-def bars_to_score(asset, prices, baseline, existing_observations, current_time=None) -> pd.DataFrame:
+def _asset_forward_start_floor(asset_meta, baseline) -> pd.Timestamp | None:
+    raw = (asset_meta or {}).get("forward_start_utc")
+    if not raw:
+        return _phase_start_floor(baseline)
+    ts = pd.Timestamp(raw)
+    if getattr(ts, "tzinfo", None) is not None:
+        ts = ts.tz_convert(None)
+    return ts.floor("h")
+
+
+def bars_to_score(asset, prices, baseline, existing_observations, current_time=None, asset_meta=None) -> pd.DataFrame:
     """Return completed Phase H bars without existing observations.
 
     This fills missed hourly scheduler runs but does not backfill the entire
@@ -91,10 +101,13 @@ def bars_to_score(asset, prices, baseline, existing_observations, current_time=N
     if done.empty:
         return done
 
-    phase_start = _phase_start_floor(baseline)
+    has_explicit_forward_start = bool((asset_meta or {}).get("forward_start_utc"))
+    forward_start = _asset_forward_start_floor(asset_meta, baseline)
     timestamps = pd.to_datetime(done["timestamp"], errors="coerce")
-    candidates = done[timestamps >= phase_start].copy() if phase_start is not None else done.tail(1).copy()
+    candidates = done[timestamps >= forward_start].copy() if forward_start is not None else done.tail(1).copy()
     if candidates.empty:
+        if has_explicit_forward_start:
+            return candidates
         candidates = done.tail(1).copy()
 
     existing_ids = set()
@@ -215,7 +228,7 @@ def process_completed_bar(asset, cfg, positions, model_version, feats, target_ro
     }
 
 
-def process_asset(asset, cfg, positions, baseline, model_version):
+def process_asset(asset, cfg, positions, baseline, model_version, asset_meta=None):
     """Backfill all unscored completed Phase H bars for one asset."""
     try:
         price_path = find_asset_price_file(ROOT / "data/prices", asset)
@@ -230,7 +243,7 @@ def process_asset(asset, cfg, positions, baseline, model_version):
         print(f"{asset}: STALE_DATA (bar age {latest['meta']['bar_age_hours']}h) - no action")
         return {"asset": asset, "status": "STALE_DATA"}
 
-    targets = bars_to_score(asset, prices, baseline, load_observations())
+    targets = bars_to_score(asset, prices, baseline, load_observations(), asset_meta=asset_meta)
     if targets.empty:
         return {"asset": asset, "status": latest["meta"]["status"], "decision": "NO_NEW_COMPLETED_BAR"}
 
@@ -256,9 +269,9 @@ def main():
     positions = load_positions()
     model_version = get_model_version()
     results = {}
-    for asset, _ in asset_items(cfg, forward_research=True):
+    for asset, asset_meta in asset_items(cfg, forward_research=True):
         try:
-            results[asset] = process_asset(asset, cfg, positions, baseline, model_version)
+            results[asset] = process_asset(asset, cfg, positions, baseline, model_version, asset_meta)
             print(f"{asset}: {results[asset]['status']} ({results[asset].get('decision', '')})")
         except Exception as exc:
             results[asset] = {"asset": asset, "status": "FAILED", "reason": str(exc)}

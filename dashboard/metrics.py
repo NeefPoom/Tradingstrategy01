@@ -597,6 +597,95 @@ def strategy_fit_table(
     return out[columns]
 
 
+def expansion_candidate_table(
+    fit: pd.DataFrame,
+    asset_registry: pd.DataFrame,
+    latest_scores: pd.DataFrame,
+    min_orders: int = 30,
+) -> pd.DataFrame:
+    columns = [
+        "Priority",
+        "Asset",
+        "Class",
+        "Role",
+        "Stage",
+        "Forward start",
+        "Orders",
+        "Score",
+        "PF",
+        "Win rate",
+        "Net return",
+        "Data",
+        "Latest action",
+        "Why",
+    ]
+    if asset_registry.empty or "asset" not in asset_registry:
+        return pd.DataFrame(columns=columns)
+
+    fit_map = fit.set_index("Asset").to_dict(orient="index") if not fit.empty and "Asset" in fit else {}
+    latest_map = latest_scores.set_index("asset").to_dict(orient="index") if not latest_scores.empty and "asset" in latest_scores else {}
+    rows = []
+    for _, meta in asset_registry.iterrows():
+        asset = str(meta.get("asset"))
+        row = fit_map.get(asset, {})
+        latest = latest_map.get(asset, {})
+        role = str(meta.get("universe_role", "candidate"))
+        orders = int(pd.to_numeric(row.get("Orders", 0), errors="coerce") or 0)
+        score = float(pd.to_numeric(row.get("Score", 0), errors="coerce") or 0)
+        data_state = str(row.get("Data", "Unknown"))
+        action = str(latest.get("recommended_action", "WAIT_SAMPLE"))
+        reasons = []
+
+        if role == "core":
+            stage = "Phase H core"
+            priority = 0
+            reasons.append("Already inside the frozen Phase H forward cohort.")
+        elif data_state != "Complete":
+            stage = "Fix data first"
+            priority = 5
+            reasons.append(f"Price coverage is not complete: {data_state}.")
+        elif orders < min_orders:
+            stage = "Collect forward sample"
+            priority = 2
+            reasons.append(f"Needs {min_orders - orders} more resolved setup(s) before promotion scoring is reliable.")
+        elif score >= 65:
+            stage = "Promote candidate"
+            priority = 1
+            reasons.append("Forward evidence is strong enough for the next review bucket.")
+        elif score >= 50:
+            stage = "Watchlist"
+            priority = 3
+            reasons.append("Evidence is useful but not yet strong enough for promotion.")
+        else:
+            stage = "Do not promote yet"
+            priority = 4
+            reasons.append("Forward score is still weak versus the current strategy.")
+
+        if action in {"MR_ELIGIBLE", "WATCH_MR", "MR_BLOCK"}:
+            reasons.append(f"Latest model state: {action}.")
+        rows.append(
+            {
+                "Priority": priority,
+                "Asset": asset,
+                "Class": meta.get("asset_class", row.get("Class", "OTHER")),
+                "Role": role,
+                "Stage": stage,
+                "Forward start": meta.get("forward_start_utc") or "Phase H start",
+                "Orders": orders,
+                "Score": round(score, 1),
+                "PF": row.get("PF", "n/a"),
+                "Win rate": row.get("Win rate", "n/a"),
+                "Net return": row.get("Net return", "n/a"),
+                "Data": data_state,
+                "Latest action": action,
+                "Why": " ".join(reasons),
+            }
+        )
+
+    out = pd.DataFrame(rows).sort_values(["Priority", "Score", "Orders"], ascending=[True, False, False]).reset_index(drop=True)
+    return out[columns]
+
+
 def common_forward_window(trades: pd.DataFrame, assets: list[str] | None = None) -> dict[str, Any]:
     if trades.empty or not {"timestamp", "asset"}.issubset(trades.columns):
         return {"start": None, "end": None, "assets": 0, "usable": False}

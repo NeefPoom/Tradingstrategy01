@@ -1,4 +1,4 @@
-timeframe: "1h"
+﻿timeframe: "1h"
 
 core:
   normalization_length: 70
@@ -102,9 +102,10 @@ assets:
     asset_class: "FX"
     calendar: "24/5"
     universe_role: "candidate"
+    forward_start_utc: "2026-09-07T17:00:00Z"
     data_collection_enabled: true
-    forward_research_enabled: false
-    selection_enabled: false
+    forward_research_enabled: true
+    selection_enabled: true
     estimated_round_trip_cost_pct: 0.00
   GBPUSD:
     yahoo: "GBPUSD=X"
@@ -112,9 +113,10 @@ assets:
     asset_class: "FX"
     calendar: "24/5"
     universe_role: "candidate"
+    forward_start_utc: "2026-09-07T17:00:00Z"
     data_collection_enabled: true
-    forward_research_enabled: false
-    selection_enabled: false
+    forward_research_enabled: true
+    selection_enabled: true
     estimated_round_trip_cost_pct: 0.00
   AUDUSD:
     yahoo: "AUDUSD=X"
@@ -122,9 +124,10 @@ assets:
     asset_class: "FX"
     calendar: "24/5"
     universe_role: "candidate"
+    forward_start_utc: "2026-09-07T17:00:00Z"
     data_collection_enabled: true
-    forward_research_enabled: false
-    selection_enabled: false
+    forward_research_enabled: true
+    selection_enabled: true
     estimated_round_trip_cost_pct: 0.00
   NZDUSD:
     yahoo: "NZDUSD=X"
@@ -132,9 +135,10 @@ assets:
     asset_class: "FX"
     calendar: "24/5"
     universe_role: "candidate"
+    forward_start_utc: "2026-09-07T17:00:00Z"
     data_collection_enabled: true
-    forward_research_enabled: false
-    selection_enabled: false
+    forward_research_enabled: true
+    selection_enabled: true
     estimated_round_trip_cost_pct: 0.00
   USDCAD:
     yahoo: "USDCAD=X"
@@ -142,9 +146,10 @@ assets:
     asset_class: "FX"
     calendar: "24/5"
     universe_role: "candidate"
+    forward_start_utc: "2026-09-07T17:00:00Z"
     data_collection_enabled: true
-    forward_research_enabled: false
-    selection_enabled: false
+    forward_research_enabled: true
+    selection_enabled: true
     estimated_round_trip_cost_pct: 0.00
   USDCHF:
     yahoo: "CHF=X"
@@ -152,9 +157,10 @@ assets:
     asset_class: "FX"
     calendar: "24/5"
     universe_role: "candidate"
+    forward_start_utc: "2026-09-07T17:00:00Z"
     data_collection_enabled: true
-    forward_research_enabled: false
-    selection_enabled: false
+    forward_research_enabled: true
+    selection_enabled: true
     estimated_round_trip_cost_pct: 0.00
   EURJPY:
     yahoo: "EURJPY=X"
@@ -162,9 +168,10 @@ assets:
     asset_class: "FX"
     calendar: "24/5"
     universe_role: "candidate"
+    forward_start_utc: "2026-09-07T17:00:00Z"
     data_collection_enabled: true
-    forward_research_enabled: false
-    selection_enabled: false
+    forward_research_enabled: true
+    selection_enabled: true
     estimated_round_trip_cost_pct: 0.00
   GBPJPY:
     yahoo: "GBPJPY=X"
@@ -172,9 +179,10 @@ assets:
     asset_class: "FX"
     calendar: "24/5"
     universe_role: "candidate"
+    forward_start_utc: "2026-09-07T17:00:00Z"
     data_collection_enabled: true
-    forward_research_enabled: false
-    selection_enabled: false
+    forward_research_enabled: true
+    selection_enabled: true
     estimated_round_trip_cost_pct: 0.00
   AUDJPY:
     yahoo: "AUDJPY=X"
@@ -182,9 +190,10 @@ assets:
     asset_class: "FX"
     calendar: "24/5"
     universe_role: "candidate"
+    forward_start_utc: "2026-09-07T17:00:00Z"
     data_collection_enabled: true
-    forward_research_enabled: false
-    selection_enabled: false
+    forward_research_enabled: true
+    selection_enabled: true
     estimated_round_trip_cost_pct: 0.00
   CADJPY:
     yahoo: "CADJPY=X"
@@ -192,9 +201,10 @@ assets:
     asset_class: "FX"
     calendar: "24/5"
     universe_role: "candidate"
+    forward_start_utc: "2026-09-07T17:00:00Z"
     data_collection_enabled: true
-    forward_research_enabled: false
-    selection_enabled: false
+    forward_research_enabled: true
+    selection_enabled: true
     estimated_round_trip_cost_pct: 0.00
   CHFJPY:
     yahoo: "CHFJPY=X"
@@ -202,9 +212,10 @@ assets:
     asset_class: "FX"
     calendar: "24/5"
     universe_role: "candidate"
+    forward_start_utc: "2026-09-07T17:00:00Z"
     data_collection_enabled: true
-    forward_research_enabled: false
-    selection_enabled: false
+    forward_research_enabled: true
+    selection_enabled: true
     estimated_round_trip_cost_pct: 0.00
   EURGBP:
     yahoo: "EURGBP=X"
@@ -212,9 +223,10 @@ assets:
     asset_class: "FX"
     calendar: "24/5"
     universe_role: "candidate"
+    forward_start_utc: "2026-09-07T17:00:00Z"
     data_collection_enabled: true
-    forward_research_enabled: false
-    selection_enabled: false
+    forward_research_enabled: true
+    selection_enabled: true
     estimated_round_trip_cost_pct: 0.00
   EURCHF:
     yahoo: "EURCHF=X"
@@ -222,9 +234,10 @@ assets:
     asset_class: "FX"
     calendar: "24/5"
     universe_role: "candidate"
+    forward_start_utc: "2026-09-07T17:00:00Z"
     data_collection_enabled: true
-    forward_research_enabled: false
-    selection_enabled: false
+    forward_research_enabled: true
+    selection_enabled: true
     estimated_round_trip_cost_pct: 0.00
   EURAUD:
     yahoo: "EURAUD=X"
@@ -232,9 +245,10 @@ assets:
     asset_class: "FX"
     calendar: "24/5"
     universe_role: "candidate"
+    forward_start_utc: "2026-09-07T17:00:00Z"
     data_collection_enabled: true
-    forward_research_enabled: false
-    selection_enabled: false
+    forward_research_enabled: true
+    selection_enabled: true
     estimated_round_trip_cost_pct: 0.00
   GBPAUD:
     yahoo: "GBPAUD=X"
@@ -242,9 +256,10 @@ assets:
     asset_class: "FX"
     calendar: "24/5"
     universe_role: "candidate"
+    forward_start_utc: "2026-09-07T17:00:00Z"
     data_collection_enabled: true
-    forward_research_enabled: false
-    selection_enabled: false
+    forward_research_enabled: true
+    selection_enabled: true
     estimated_round_trip_cost_pct: 0.00
   GBPCAD:
     yahoo: "GBPCAD=X"
@@ -252,9 +267,10 @@ assets:
     asset_class: "FX"
     calendar: "24/5"
     universe_role: "candidate"
+    forward_start_utc: "2026-09-07T17:00:00Z"
     data_collection_enabled: true
-    forward_research_enabled: false
-    selection_enabled: false
+    forward_research_enabled: true
+    selection_enabled: true
     estimated_round_trip_cost_pct: 0.00
   GBPCHF:
     yahoo: "GBPCHF=X"
@@ -262,9 +278,10 @@ assets:
     asset_class: "FX"
     calendar: "24/5"
     universe_role: "candidate"
+    forward_start_utc: "2026-09-07T17:00:00Z"
     data_collection_enabled: true
-    forward_research_enabled: false
-    selection_enabled: false
+    forward_research_enabled: true
+    selection_enabled: true
     estimated_round_trip_cost_pct: 0.00
   AUDCAD:
     yahoo: "AUDCAD=X"
@@ -272,9 +289,10 @@ assets:
     asset_class: "FX"
     calendar: "24/5"
     universe_role: "candidate"
+    forward_start_utc: "2026-09-07T17:00:00Z"
     data_collection_enabled: true
-    forward_research_enabled: false
-    selection_enabled: false
+    forward_research_enabled: true
+    selection_enabled: true
     estimated_round_trip_cost_pct: 0.00
   AUDNZD:
     yahoo: "AUDNZD=X"
@@ -282,9 +300,10 @@ assets:
     asset_class: "FX"
     calendar: "24/5"
     universe_role: "candidate"
+    forward_start_utc: "2026-09-07T17:00:00Z"
     data_collection_enabled: true
-    forward_research_enabled: false
-    selection_enabled: false
+    forward_research_enabled: true
+    selection_enabled: true
     estimated_round_trip_cost_pct: 0.00
   AUDCHF:
     yahoo: "AUDCHF=X"
@@ -292,9 +311,10 @@ assets:
     asset_class: "FX"
     calendar: "24/5"
     universe_role: "candidate"
+    forward_start_utc: "2026-09-07T17:00:00Z"
     data_collection_enabled: true
-    forward_research_enabled: false
-    selection_enabled: false
+    forward_research_enabled: true
+    selection_enabled: true
     estimated_round_trip_cost_pct: 0.00
   NZDJPY:
     yahoo: "NZDJPY=X"
@@ -302,9 +322,10 @@ assets:
     asset_class: "FX"
     calendar: "24/5"
     universe_role: "candidate"
+    forward_start_utc: "2026-09-07T17:00:00Z"
     data_collection_enabled: true
-    forward_research_enabled: false
-    selection_enabled: false
+    forward_research_enabled: true
+    selection_enabled: true
     estimated_round_trip_cost_pct: 0.00
   NZDCAD:
     yahoo: "NZDCAD=X"
@@ -312,9 +333,10 @@ assets:
     asset_class: "FX"
     calendar: "24/5"
     universe_role: "candidate"
+    forward_start_utc: "2026-09-07T17:00:00Z"
     data_collection_enabled: true
-    forward_research_enabled: false
-    selection_enabled: false
+    forward_research_enabled: true
+    selection_enabled: true
     estimated_round_trip_cost_pct: 0.00
   NZDCHF:
     yahoo: "NZDCHF=X"
@@ -322,9 +344,10 @@ assets:
     asset_class: "FX"
     calendar: "24/5"
     universe_role: "candidate"
+    forward_start_utc: "2026-09-07T17:00:00Z"
     data_collection_enabled: true
-    forward_research_enabled: false
-    selection_enabled: false
+    forward_research_enabled: true
+    selection_enabled: true
     estimated_round_trip_cost_pct: 0.00
   CADCHF:
     yahoo: "CADCHF=X"
@@ -332,9 +355,10 @@ assets:
     asset_class: "FX"
     calendar: "24/5"
     universe_role: "candidate"
+    forward_start_utc: "2026-09-07T17:00:00Z"
     data_collection_enabled: true
-    forward_research_enabled: false
-    selection_enabled: false
+    forward_research_enabled: true
+    selection_enabled: true
     estimated_round_trip_cost_pct: 0.00
 
   SILVER:
@@ -343,9 +367,10 @@ assets:
     asset_class: "METALS"
     calendar: "CMEGlobex_GC"
     universe_role: "candidate"
+    forward_start_utc: "2026-09-07T17:00:00Z"
     data_collection_enabled: true
-    forward_research_enabled: false
-    selection_enabled: false
+    forward_research_enabled: true
+    selection_enabled: true
     estimated_round_trip_cost_pct: 0.00
   WTI:
     yahoo: "CL=F"
@@ -353,9 +378,10 @@ assets:
     asset_class: "ENERGY"
     calendar: "CMEGlobex_Energy"
     universe_role: "candidate"
+    forward_start_utc: "2026-09-07T17:00:00Z"
     data_collection_enabled: true
-    forward_research_enabled: false
-    selection_enabled: false
+    forward_research_enabled: true
+    selection_enabled: true
     estimated_round_trip_cost_pct: 0.00
   BRENT:
     yahoo: "BZ=F"
@@ -363,9 +389,10 @@ assets:
     asset_class: "ENERGY"
     calendar: "CMEGlobex_Energy"
     universe_role: "candidate"
+    forward_start_utc: "2026-09-07T17:00:00Z"
     data_collection_enabled: true
-    forward_research_enabled: false
-    selection_enabled: false
+    forward_research_enabled: true
+    selection_enabled: true
     estimated_round_trip_cost_pct: 0.00
   NATGAS:
     yahoo: "NG=F"
@@ -373,9 +400,10 @@ assets:
     asset_class: "ENERGY"
     calendar: "CMEGlobex_Energy"
     universe_role: "candidate"
+    forward_start_utc: "2026-09-07T17:00:00Z"
     data_collection_enabled: true
-    forward_research_enabled: false
-    selection_enabled: false
+    forward_research_enabled: true
+    selection_enabled: true
     estimated_round_trip_cost_pct: 0.00
 
   NAS100:
@@ -384,9 +412,10 @@ assets:
     asset_class: "INDEX"
     calendar: "NYSE"
     universe_role: "candidate"
+    forward_start_utc: "2026-09-07T17:00:00Z"
     data_collection_enabled: true
-    forward_research_enabled: false
-    selection_enabled: false
+    forward_research_enabled: true
+    selection_enabled: true
     estimated_round_trip_cost_pct: 0.00
   US30:
     yahoo: "^DJI"
@@ -394,9 +423,10 @@ assets:
     asset_class: "INDEX"
     calendar: "NYSE"
     universe_role: "candidate"
+    forward_start_utc: "2026-09-07T17:00:00Z"
     data_collection_enabled: true
-    forward_research_enabled: false
-    selection_enabled: false
+    forward_research_enabled: true
+    selection_enabled: true
     estimated_round_trip_cost_pct: 0.00
   GER40:
     yahoo: "^GDAXI"
@@ -404,9 +434,10 @@ assets:
     asset_class: "INDEX"
     calendar: "XETR"
     universe_role: "candidate"
+    forward_start_utc: "2026-09-07T17:00:00Z"
     data_collection_enabled: true
-    forward_research_enabled: false
-    selection_enabled: false
+    forward_research_enabled: true
+    selection_enabled: true
     estimated_round_trip_cost_pct: 0.00
   UK100:
     yahoo: "^FTSE"
@@ -414,9 +445,10 @@ assets:
     asset_class: "INDEX"
     calendar: "XLON"
     universe_role: "candidate"
+    forward_start_utc: "2026-09-07T17:00:00Z"
     data_collection_enabled: true
-    forward_research_enabled: false
-    selection_enabled: false
+    forward_research_enabled: true
+    selection_enabled: true
     estimated_round_trip_cost_pct: 0.00
   JPN225:
     yahoo: "^N225"
@@ -424,9 +456,10 @@ assets:
     asset_class: "INDEX"
     calendar: "JPX"
     universe_role: "candidate"
+    forward_start_utc: "2026-09-07T17:00:00Z"
     data_collection_enabled: true
-    forward_research_enabled: false
-    selection_enabled: false
+    forward_research_enabled: true
+    selection_enabled: true
     estimated_round_trip_cost_pct: 0.00
   AUS200:
     yahoo: "^AXJO"
@@ -434,9 +467,10 @@ assets:
     asset_class: "INDEX"
     calendar: "ASX"
     universe_role: "candidate"
+    forward_start_utc: "2026-09-07T17:00:00Z"
     data_collection_enabled: true
-    forward_research_enabled: false
-    selection_enabled: false
+    forward_research_enabled: true
+    selection_enabled: true
     estimated_round_trip_cost_pct: 0.00
   HK50:
     yahoo: "^HSI"
@@ -444,9 +478,10 @@ assets:
     asset_class: "INDEX"
     calendar: "XHKG"
     universe_role: "candidate"
+    forward_start_utc: "2026-09-07T17:00:00Z"
     data_collection_enabled: true
-    forward_research_enabled: false
-    selection_enabled: false
+    forward_research_enabled: true
+    selection_enabled: true
     estimated_round_trip_cost_pct: 0.00
   FRA40:
     yahoo: "^FCHI"
@@ -454,9 +489,10 @@ assets:
     asset_class: "INDEX"
     calendar: "XPAR"
     universe_role: "candidate"
+    forward_start_utc: "2026-09-07T17:00:00Z"
     data_collection_enabled: true
-    forward_research_enabled: false
-    selection_enabled: false
+    forward_research_enabled: true
+    selection_enabled: true
     estimated_round_trip_cost_pct: 0.00
   EU50:
     yahoo: "^STOXX50E"
@@ -464,9 +500,10 @@ assets:
     asset_class: "INDEX"
     calendar: "XPAR"
     universe_role: "candidate"
+    forward_start_utc: "2026-09-07T17:00:00Z"
     data_collection_enabled: true
-    forward_research_enabled: false
-    selection_enabled: false
+    forward_research_enabled: true
+    selection_enabled: true
     estimated_round_trip_cost_pct: 0.00
 
   SOLUSD:
@@ -475,9 +512,10 @@ assets:
     asset_class: "CRYPTO"
     calendar: "24/7"
     universe_role: "candidate"
+    forward_start_utc: "2026-09-07T17:00:00Z"
     data_collection_enabled: true
-    forward_research_enabled: false
-    selection_enabled: false
+    forward_research_enabled: true
+    selection_enabled: true
     estimated_round_trip_cost_pct: 0.00
   XRPUSD:
     yahoo: "XRP-USD"
@@ -485,9 +523,10 @@ assets:
     asset_class: "CRYPTO"
     calendar: "24/7"
     universe_role: "candidate"
+    forward_start_utc: "2026-09-07T17:00:00Z"
     data_collection_enabled: true
-    forward_research_enabled: false
-    selection_enabled: false
+    forward_research_enabled: true
+    selection_enabled: true
     estimated_round_trip_cost_pct: 0.00
   ADAUSD:
     yahoo: "ADA-USD"
@@ -495,9 +534,10 @@ assets:
     asset_class: "CRYPTO"
     calendar: "24/7"
     universe_role: "candidate"
+    forward_start_utc: "2026-09-07T17:00:00Z"
     data_collection_enabled: true
-    forward_research_enabled: false
-    selection_enabled: false
+    forward_research_enabled: true
+    selection_enabled: true
     estimated_round_trip_cost_pct: 0.00
   DOGEUSD:
     yahoo: "DOGE-USD"
@@ -505,9 +545,10 @@ assets:
     asset_class: "CRYPTO"
     calendar: "24/7"
     universe_role: "candidate"
+    forward_start_utc: "2026-09-07T17:00:00Z"
     data_collection_enabled: true
-    forward_research_enabled: false
-    selection_enabled: false
+    forward_research_enabled: true
+    selection_enabled: true
     estimated_round_trip_cost_pct: 0.00
   LTCUSD:
     yahoo: "LTC-USD"
@@ -515,9 +556,10 @@ assets:
     asset_class: "CRYPTO"
     calendar: "24/7"
     universe_role: "candidate"
+    forward_start_utc: "2026-09-07T17:00:00Z"
     data_collection_enabled: true
-    forward_research_enabled: false
-    selection_enabled: false
+    forward_research_enabled: true
+    selection_enabled: true
     estimated_round_trip_cost_pct: 0.00
   BCHUSD:
     yahoo: "BCH-USD"
@@ -525,9 +567,10 @@ assets:
     asset_class: "CRYPTO"
     calendar: "24/7"
     universe_role: "candidate"
+    forward_start_utc: "2026-09-07T17:00:00Z"
     data_collection_enabled: true
-    forward_research_enabled: false
-    selection_enabled: false
+    forward_research_enabled: true
+    selection_enabled: true
     estimated_round_trip_cost_pct: 0.00
   DOTUSD:
     yahoo: "DOT-USD"
@@ -535,9 +578,10 @@ assets:
     asset_class: "CRYPTO"
     calendar: "24/7"
     universe_role: "candidate"
+    forward_start_utc: "2026-09-07T17:00:00Z"
     data_collection_enabled: true
-    forward_research_enabled: false
-    selection_enabled: false
+    forward_research_enabled: true
+    selection_enabled: true
     estimated_round_trip_cost_pct: 0.00
   LINKUSD:
     yahoo: "LINK-USD"
@@ -545,9 +589,10 @@ assets:
     asset_class: "CRYPTO"
     calendar: "24/7"
     universe_role: "candidate"
+    forward_start_utc: "2026-09-07T17:00:00Z"
     data_collection_enabled: true
-    forward_research_enabled: false
-    selection_enabled: false
+    forward_research_enabled: true
+    selection_enabled: true
     estimated_round_trip_cost_pct: 0.00
   BNBUSD:
     yahoo: "BNB-USD"
@@ -555,9 +600,10 @@ assets:
     asset_class: "CRYPTO"
     calendar: "24/7"
     universe_role: "candidate"
+    forward_start_utc: "2026-09-07T17:00:00Z"
     data_collection_enabled: true
-    forward_research_enabled: false
-    selection_enabled: false
+    forward_research_enabled: true
+    selection_enabled: true
     estimated_round_trip_cost_pct: 0.00
   AVAXUSD:
     yahoo: "AVAX-USD"
@@ -565,13 +611,14 @@ assets:
     asset_class: "CRYPTO"
     calendar: "24/7"
     universe_role: "candidate"
+    forward_start_utc: "2026-09-07T17:00:00Z"
     data_collection_enabled: true
-    forward_research_enabled: false
-    selection_enabled: false
+    forward_research_enabled: true
+    selection_enabled: true
     estimated_round_trip_cost_pct: 0.00
 
 # ============================================================
-# PHASE H — FROZEN FORWARD VALIDATION (do not modify during H)
+# PHASE H â€” FROZEN FORWARD VALIDATION (do not modify during H)
 # ============================================================
 phase_h:
   enabled: true
@@ -612,3 +659,6 @@ forward_validation:
   preferred_mr_candidates: 60
   minimum_runner_events: 20
   preferred_runner_events: 40
+
+
+
