@@ -10,7 +10,7 @@ on:
       - "docs/**"
       - "PHASE_H_STATUS.md"
   schedule:
-    - cron: "12 * * * *"
+    - cron: "7,37 * * * *"
 
 permissions:
   contents: write

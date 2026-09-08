@@ -217,7 +217,7 @@ def build() -> str:
       <h1>Hybrid MR-TF Phase H Dashboard</h1>
       <div class="sub">Research / forward validation only. No broker execution.</div>
     </div>
-    <div class="sub">Updated {escape(updated)}<br>Auto-refreshes every 15 minutes</div>
+    <div class="sub">Data generated {escape(updated)}<br>Browser reloads every 15 minutes</div>
   </header>
 
   <div class="grid">
