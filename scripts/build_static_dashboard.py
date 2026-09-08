@@ -19,10 +19,14 @@ from dashboard.metrics import (
     common_forward_window,
     data_completeness_summary,
     expansion_candidate_table,
+    investor_warning_table,
     performance_summary,
     portfolio_candidate_sets,
+    return_diagnostics,
     simulation_trade_frame,
     strategy_fit_table,
+    strategy_health_status,
+    strategy_window_table,
     strategy_return_correlation,
 )
 
@@ -101,6 +105,11 @@ def build() -> str:
     expansion = expansion_candidate_table(fit, data.asset_registry, data.latest_scores)
     core_fit = fit[fit["Role"].astype(str).str.lower().eq("core")].copy() if not fit.empty and "Role" in fit else pd.DataFrame()
     candidate_fit = fit[fit["Role"].astype(str).str.lower().eq("candidate")].copy() if not fit.empty and "Role" in fit else pd.DataFrame()
+    gate_trades = trades[trades["trade_bucket"].eq("Gate allowed")] if not trades.empty and "trade_bucket" in trades else trades
+    diagnostics = return_diagnostics(gate_trades["sim_return_pct"] if not gate_trades.empty and "sim_return_pct" in gate_trades else pd.Series(dtype=float))
+    strategy_status = strategy_health_status(diagnostics)
+    windows = strategy_window_table(gate_trades)
+    warnings = investor_warning_table(trades, fit, data.market_open_completeness, data.latest_scores, data.observations)
     portfolios, curves = portfolio_candidate_sets(trades, fit, top_n=5, max_avg_corr=0.65)
     stats = performance_summary(trades)
     corr = strategy_return_correlation(trades)
@@ -135,6 +144,12 @@ def build() -> str:
             f"Common forward window: {window['start'].strftime('%Y-%m-%d %H:%M UTC')} "
             f"to {window['end'].strftime('%Y-%m-%d %H:%M UTC')} across {window['assets']} assets."
         )
+    pf_value = diagnostics["profit_factor"]
+    pf_label = "inf" if pf_value == float("inf") else f"{pf_value:.2f}" if pf_value is not None else "n/a"
+    win_label = f"{diagnostics['win_rate']:.2%}" if diagnostics["win_rate"] is not None else "n/a"
+    max_dd_label = f"{(diagnostics['max_drawdown'] or 0) / 100:.2%}"
+    avg_wl_label = f"{(diagnostics['avg_win'] or 0) / 100:.2%} / {(diagnostics['avg_loss'] or 0) / 100:.2%}"
+    sample_label_text = f"{diagnostics['orders']} trades"
 
     return f"""<!doctype html>
 <html lang="en">
@@ -220,7 +235,7 @@ def build() -> str:
     <div class="sub">Data generated {escape(updated)}<br>Browser reloads every 15 minutes</div>
   </header>
 
-  <div class="grid">
+    <div class="grid">
     {_metric("Phase H decision", str(data.status.get("decision", "UNKNOWN")), str(data.status.get("decision", "UNKNOWN")))}
     {_metric("Yahoo data", "PASS" if not data.price_quality.empty and data.price_quality["status"].astype(str).str.upper().eq("PASS").all() else "CHECK", "PASS" if not data.price_quality.empty and data.price_quality["status"].astype(str).str.upper().eq("PASS").all() else "WARNING")}
     {_metric("Completeness", completeness_status, completeness_status)}
@@ -228,6 +243,17 @@ def build() -> str:
     {_metric("Core / candidate", f"{registry_counts.get('core', 0)} / {registry_counts.get('candidate', 0)}")}
     {_metric("Simulation orders", str(stats["orders"]), stats["status"])}
   </div>
+  <h2>Strategy health</h2>
+  <div class="grid">
+    {_metric("Status", strategy_status, strategy_status)}
+    {_metric("Gate allowed PF", pf_label)}
+    {_metric("Win rate", win_label)}
+    {_metric("Max DD", max_dd_label)}
+    {_metric("Avg W / L", avg_wl_label)}
+    {_metric("Sample", sample_label_text)}
+  </div>
+  {_table(windows, limit=12)}
+
   <div class="grid" style="margin-top: 12px;">
     {_metric("Promotion candidates", str(promote_count), "PROMOTE CANDIDATE" if promote_count else "COLLECT FORWARD SAMPLE")}
     {_metric("Watchlist", str(watch_count), "WATCHLIST" if watch_count else None)}
@@ -241,6 +267,9 @@ def build() -> str:
     <strong>Data completeness</strong>
     <div class="note">{escape(completeness_note)}</div>
   </section>
+
+  <h2>Research warnings</h2>
+  {_table(warnings, limit=12)}
 
   <h2>Portfolio simulation</h2>
   <div class="note">{escape(common)}</div>

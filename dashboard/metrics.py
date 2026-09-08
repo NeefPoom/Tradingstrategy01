@@ -870,6 +870,131 @@ def performance_table(trades: pd.DataFrame, group_col: str = "asset") -> pd.Data
     return pd.DataFrame(rows).sort_values(["Orders", "Group"], ascending=[False, True]).reset_index(drop=True)
 
 
+def return_diagnostics(returns: pd.Series) -> dict[str, Any]:
+    vals = pd.to_numeric(returns, errors="coerce").dropna()
+    if vals.empty:
+        return {
+            "orders": 0,
+            "profit_factor": None,
+            "win_rate": None,
+            "net_return": 0.0,
+            "avg_return": None,
+            "avg_win": None,
+            "avg_loss": None,
+            "expectancy": None,
+            "max_drawdown": None,
+            "current_drawdown": None,
+            "top_3_profit_share": None,
+        }
+    curve = vals.cumsum()
+    running_high = curve.cummax()
+    dd = curve - running_high
+    gains = vals[vals > 0]
+    top_profit_share = None
+    if gains.sum() > 0:
+        top_profit_share = float(gains.sort_values(ascending=False).head(3).sum() / gains.sum())
+    return {
+        "orders": int(len(vals)),
+        "profit_factor": profit_factor(vals),
+        "win_rate": win_rate(vals),
+        "net_return": float(vals.sum()),
+        "avg_return": float(vals.mean()),
+        "avg_win": float(gains.mean()) if not gains.empty else None,
+        "avg_loss": float(vals[vals < 0].mean()) if (vals < 0).any() else None,
+        "expectancy": float(vals.mean()),
+        "max_drawdown": float(dd.min()) if not dd.empty else None,
+        "current_drawdown": float(dd.iloc[-1]) if not dd.empty else None,
+        "top_3_profit_share": top_profit_share,
+    }
+
+
+def strategy_health_status(diag: dict[str, Any]) -> str:
+    orders = int(diag.get("orders") or 0)
+    pf = diag.get("profit_factor")
+    net = float(diag.get("net_return") or 0)
+    dd = abs(float(diag.get("max_drawdown") or 0))
+    if orders < 20:
+        return "INSUFFICIENT SAMPLE"
+    if pf is not None and pf >= 1.25 and net > 0 and dd < 8:
+        return "HEALTHY"
+    if pf is not None and pf >= 1.0 and net >= 0:
+        return "WATCH"
+    return "WEAK"
+
+
+def strategy_window_table(trades: pd.DataFrame) -> pd.DataFrame:
+    columns = ["Metric", "7D", "14D", "Since Phase H"]
+    if trades.empty or not {"timestamp", "sim_return_pct"}.issubset(trades.columns):
+        return pd.DataFrame(columns=columns)
+    frame = trades.copy()
+    frame["timestamp"] = pd.to_datetime(frame["timestamp"], errors="coerce")
+    frame["sim_return_pct"] = pd.to_numeric(frame["sim_return_pct"], errors="coerce")
+    frame = frame.dropna(subset=["timestamp", "sim_return_pct"])
+    if frame.empty:
+        return pd.DataFrame(columns=columns)
+    end = frame["timestamp"].max()
+    windows = {
+        "7D": frame[frame["timestamp"] >= end - pd.Timedelta(days=7)],
+        "14D": frame[frame["timestamp"] >= end - pd.Timedelta(days=14)],
+        "Since Phase H": frame,
+    }
+
+    def diag(label: str) -> dict[str, Any]:
+        return return_diagnostics(windows[label]["sim_return_pct"])
+
+    diags = {label: diag(label) for label in windows}
+    rows = [
+        ("Trades", lambda d: str(d["orders"])),
+        ("PF", lambda d: "inf" if d["profit_factor"] == math.inf else num(d["profit_factor"], 2)),
+        ("Win rate", lambda d: pct(d["win_rate"])),
+        ("Avg return", lambda d: pct((d["avg_return"] or 0) / 100)),
+        ("Avg win", lambda d: pct((d["avg_win"] or 0) / 100)),
+        ("Avg loss", lambda d: pct((d["avg_loss"] or 0) / 100)),
+        ("Expectancy", lambda d: pct((d["expectancy"] or 0) / 100)),
+        ("Max DD", lambda d: pct((d["max_drawdown"] or 0) / 100)),
+        ("Current DD", lambda d: pct((d["current_drawdown"] or 0) / 100)),
+    ]
+    return pd.DataFrame(
+        [{"Metric": name, **{label: formatter(diags[label]) for label in windows}} for name, formatter in rows]
+    )[columns]
+
+
+def investor_warning_table(
+    trades: pd.DataFrame,
+    fit: pd.DataFrame,
+    completeness: pd.DataFrame,
+    latest_scores: pd.DataFrame,
+    observations: pd.DataFrame,
+) -> pd.DataFrame:
+    rows = []
+    if trades.empty or len(trades) < 20:
+        rows.append({"Warning": "LOW SAMPLE", "Detail": f"Only {len(trades)} resolved simulation trade(s). Treat PF and win rate as early evidence."})
+    if not fit.empty and "Orders" in fit:
+        low = fit[(pd.to_numeric(fit["Orders"], errors="coerce").fillna(0) > 0) & (pd.to_numeric(fit["Orders"], errors="coerce").fillna(0) < 20)]
+        for _, row in low.head(5).iterrows():
+            rows.append({"Warning": "LOW SAMPLE", "Detail": f"{row['Asset']} has only {row['Orders']} resolved setup(s)."})
+    if not completeness.empty and "missing_open_bars" in completeness:
+        missing = completeness[pd.to_numeric(completeness["missing_open_bars"], errors="coerce").fillna(0) > 0]
+        for _, row in missing.head(5).iterrows():
+            rows.append({"Warning": "DATA GAP", "Detail": f"{row.get('asset')} has {row.get('missing_open_bars')} real missing open-market bar(s)."})
+        ignored = int(pd.to_numeric(completeness.get("ignored_provider_calendar_mismatch", 0), errors="coerce").fillna(0).sum())
+        if ignored:
+            rows.append({"Warning": "PROVIDER GAP", "Detail": f"{ignored} calendar/provider gap(s) are ignored as non-actionable market/session gaps."})
+    window = common_forward_window(observations)
+    if not window.get("usable"):
+        rows.append({"Warning": "TIMELINE MISMATCH", "Detail": "Assets do not yet share a usable common observation window."})
+    if not latest_scores.empty and "data_status" in latest_scores:
+        bad = latest_scores[~latest_scores["data_status"].astype(str).str.upper().eq("OK")]
+        for _, row in bad.head(5).iterrows():
+            rows.append({"Warning": "DATA STALE", "Detail": f"{row.get('asset')} latest status is {row.get('data_status')}."})
+    if trades.empty:
+        return pd.DataFrame(rows, columns=["Warning", "Detail"])
+    diag = return_diagnostics(trades["sim_return_pct"])
+    if diag.get("top_3_profit_share") is not None and diag["top_3_profit_share"] > 0.6:
+        rows.append({"Warning": "PF CONCENTRATION", "Detail": f"Top 3 winning trades explain {diag['top_3_profit_share']:.0%} of gross profit."})
+    return pd.DataFrame(rows or [{"Warning": "NONE", "Detail": "No high-priority research warning from current forward data."}])
+
+
 def gate_impact(df: pd.DataFrame) -> dict[str, Any]:
     if df.empty:
         return {"status": "INSUFFICIENT SAMPLE", "blocked_losers": 0, "blocked_winners": 0, "avoided_loss": 0.0, "missed_profit": 0.0, "benefit": 0.0}

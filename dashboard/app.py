@@ -33,7 +33,9 @@ from dashboard.metrics import (
     data_completeness_asset_cards,
     data_completeness_gap_details,
     data_completeness_summary,
+    expansion_candidate_table,
     gate_impact,
+    investor_warning_table,
     mr_forward_metrics,
     num,
     asset_selection_score_table,
@@ -45,7 +47,10 @@ from dashboard.metrics import (
     sample_label,
     simulation_trade_frame,
     common_forward_window,
+    return_diagnostics,
     strategy_fit_table,
+    strategy_health_status,
+    strategy_window_table,
     strategy_return_correlation,
     win_loss_reason_table,
     yahoo_quality_summary,
@@ -197,6 +202,7 @@ def sidebar(data):
     return st.sidebar.radio(
         "Navigation",
         [
+            "Investor Summary",
             "Overview",
             "MR_FAIL Monitor",
             "Trade Simulation",
@@ -209,6 +215,85 @@ def sidebar(data):
             "Forward Observations",
         ],
     )
+
+
+def page_investor_summary(data):
+    st.title("Phase H investor summary")
+    st.caption("Forward research summary only. This is not broker execution and not live account P&L.")
+
+    freeze = model_freeze_status(data.baseline, data.registry)
+    yahoo_status, _, yahoo_warnings = yahoo_quality_summary(data.price_quality)
+    completeness_status, completeness_note, _ = data_completeness_summary(data.market_open_completeness)
+    trades = simulation_trade_frame(data.mr_candidates, data.observations)
+    gate_trades = trades[trades["trade_bucket"].eq("Gate allowed")] if not trades.empty and "trade_bucket" in trades else trades
+    diag = return_diagnostics(gate_trades["sim_return_pct"] if not gate_trades.empty and "sim_return_pct" in gate_trades else pd.Series(dtype=float))
+    health = strategy_health_status(diag)
+    fit = strategy_fit_table(trades, data.asset_registry, data.market_open_completeness)
+    promotion = expansion_candidate_table(fit, data.asset_registry, data.latest_scores)
+    warnings = investor_warning_table(trades, fit, data.market_open_completeness, data.latest_scores, data.observations)
+    window = common_forward_window(data.observations)
+
+    stale_count = 0
+    if not data.latest_scores.empty and "data_status" in data.latest_scores:
+        stale_count = int((~data.latest_scores["data_status"].astype(str).str.upper().eq("OK")).sum())
+    missing_count = 0
+    ignored_count = 0
+    if not data.market_open_completeness.empty:
+        missing_count = int(pd.to_numeric(data.market_open_completeness.get("missing_open_bars", 0), errors="coerce").fillna(0).sum())
+        ignored_count = int(pd.to_numeric(data.market_open_completeness.get("ignored_provider_calendar_mismatch", 0), errors="coerce").fillna(0).sum())
+
+    st.subheader("System health")
+    with st.container(horizontal=True):
+        st.metric("Data", completeness_status, f"{missing_count} real missing", border=True)
+        st.metric("Provider gaps", ignored_count, "ignored", border=True)
+        st.metric("Scheduler", data.scheduler.get("status", "UNKNOWN"), border=True)
+        st.metric("Model freeze", freeze["freeze_status"], f"H1.0 / threshold {MR_FAIL_THRESHOLD:.2f}", border=True)
+        st.metric("Stale assets", stale_count, border=True)
+        st.metric("Yahoo quality", yahoo_status, border=True)
+    st.caption(completeness_note)
+
+    st.subheader("Strategy health")
+    with st.container(horizontal=True):
+        st.metric("Status", health, border=True)
+        st.metric("PF", "inf" if diag["profit_factor"] == float("inf") else num(diag["profit_factor"], 2), border=True)
+        st.metric("Win rate", pct(diag["win_rate"]), border=True)
+        st.metric("Max DD", pct((diag["max_drawdown"] or 0) / 100), border=True)
+        st.metric("Avg W / L", f"{pct((diag['avg_win'] or 0) / 100)} / {pct((diag['avg_loss'] or 0) / 100)}", border=True)
+        st.metric("Sample", f"{diag['orders']} trades", sample_label(int(diag["orders"])), border=True)
+
+    if health == "INSUFFICIENT SAMPLE":
+        st.warning("Sample is still too small for investment conclusions. Use this page as monitoring evidence, not a promotion decision.", icon=":material/warning:")
+
+    left, right = st.columns([1.45, 1])
+    with left:
+        st.plotly_chart(charts.simulation_equity_curve(gate_trades, "MR gate allowed equity - forward research simulation"), width="stretch")
+    with right:
+        dataframe_or_empty(strategy_window_table(gate_trades), "No strategy windows yet.", height=320)
+
+    if window["usable"]:
+        st.caption(
+            f"Common observation window: {window['start'].strftime('%Y-%m-%d %H:%M UTC')} "
+            f"to {window['end'].strftime('%Y-%m-%d %H:%M UTC')} across {window['assets']} asset(s)."
+        )
+    else:
+        st.warning("Common timeline is not usable yet. Asset comparisons may be misleading until all selected assets share enough forward observations.", icon=":material/timeline:")
+
+    st.subheader("Phase H asset ranking")
+    core = fit[fit["Role"].astype(str).str.lower().eq("core")].copy() if not fit.empty and "Role" in fit else pd.DataFrame()
+    core_cols = ["Rank", "Asset", "Decision", "Orders", "Score", "PF", "Win rate", "Net return", "Max DD", "Avg abs corr", "Data"]
+    dataframe_or_empty(core[[c for c in core_cols if c in core]], "No Phase H ranking yet.", height=260)
+
+    st.subheader("Promotion candidates")
+    promote = promotion[promotion["Role"].astype(str).str.lower().eq("candidate")].copy() if not promotion.empty and "Role" in promotion else pd.DataFrame()
+    promote_cols = ["Asset", "Stage", "Orders", "Score", "PF", "Win rate", "Net return", "Data", "Latest action", "Why"]
+    dataframe_or_empty(promote[[c for c in promote_cols if c in promote]], "No promotion candidates yet.", height=320)
+    st.caption("Candidates are not auto-promoted. Promotion requires clean data, adequate sample, acceptable economics, drawdown control, and low redundancy versus the core set.")
+
+    st.subheader("Research warnings")
+    dataframe_or_empty(warnings, "No research warnings.", height=260)
+    if not yahoo_warnings.empty:
+        with st.expander("Yahoo quality warning details", icon=":material/database:"):
+            dataframe_or_empty(yahoo_warnings, "No Yahoo warning rows.", height=220)
 
 
 def page_overview(data):
@@ -664,7 +749,9 @@ def page_forward_observations(data):
 def main():
     data = cached_data()
     page = sidebar(data)
-    if page == "Overview":
+    if page == "Investor Summary":
+        page_investor_summary(data)
+    elif page == "Overview":
         page_overview(data)
     elif page == "MR_FAIL Monitor":
         page_mr_fail(data)
