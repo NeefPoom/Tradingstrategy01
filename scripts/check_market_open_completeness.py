@@ -35,6 +35,18 @@ ASSET_CALENDARS = {
 
 PROVIDER_OPEN_MISMATCH_ASSETS = {"GOLD", "SILVER", "WTI", "BRENT", "NATGAS"}
 
+SPECIAL_PROVIDER_CLOSED_WINDOWS = {
+    # CME Labor Day 2026 created a futures holiday session where Yahoo did not
+    # publish continuous 1H bars for GC/SI/energy futures. Treat these as
+    # non-actionable provider/holiday gaps, not data-collection failures.
+    "CMEGlobex_GC": [
+        ("2026-09-07 03:00:00", "2026-09-08 03:00:00", "CME Labor Day 2026 / Yahoo futures holiday session"),
+    ],
+    "CMEGlobex_Energy": [
+        ("2026-09-07 03:00:00", "2026-09-08 03:00:00", "CME Labor Day 2026 / Yahoo futures holiday session"),
+    ],
+}
+
 
 def _utc_naive_index(values) -> pd.DatetimeIndex:
     idx = pd.DatetimeIndex(pd.to_datetime(values, utc=True, errors="coerce")).dropna()
@@ -97,6 +109,17 @@ def non_actionable_missing(asset: str, missing: pd.DatetimeIndex, observed: pd.D
     return pd.DatetimeIndex(ignored)
 
 
+def special_provider_closed_missing(calendar_name: str, missing: pd.DatetimeIndex) -> pd.DatetimeIndex:
+    if missing.empty:
+        return pd.DatetimeIndex([])
+    ignored = []
+    for start_raw, end_raw, _reason in SPECIAL_PROVIDER_CLOSED_WINDOWS.get(calendar_name, []):
+        start = pd.Timestamp(start_raw)
+        end = pd.Timestamp(end_raw)
+        ignored.extend(missing[(missing >= start) & (missing <= end)].tolist())
+    return pd.DatetimeIndex(ignored).drop_duplicates().sort_values()
+
+
 def phase_h_start_floor() -> pd.Timestamp | None:
     baseline_path = ROOT / "reports" / "phase_h_baseline.json"
     if not baseline_path.exists():
@@ -131,6 +154,8 @@ def summarize_asset(
     expected = expected_open_bars(asset, effective_start, last, calendar_name)
     raw_missing = expected.difference(observed)
     ignored_missing = non_actionable_missing(asset, raw_missing, observed)
+    special_ignored = special_provider_closed_missing(calendar_name, raw_missing)
+    ignored_missing = ignored_missing.union(special_ignored)
     missing = raw_missing.difference(ignored_missing)
     recoverable_cutoff = now - pd.Timedelta(days=YAHOO_1H_LIMIT_DAYS)
     recoverable = missing[missing >= recoverable_cutoff]

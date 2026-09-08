@@ -1,9 +1,9 @@
 ﻿{
-    "last_start":  "2026-09-08T00:05:02.6491049+07:00",
-    "last_finish":  "2026-09-08T00:06:15.9316085+07:00",
+    "last_start":  "2026-09-08T12:05:02.6916028+07:00",
+    "last_finish":  "2026-09-08T12:14:32.7901223+07:00",
     "exit_code":  0,
     "status":  "SUCCESS",
-    "duration_seconds":  73.3,
+    "duration_seconds":  570.1,
     "model_freeze":  "PASS",
     "model_freeze_issues":  [
 
