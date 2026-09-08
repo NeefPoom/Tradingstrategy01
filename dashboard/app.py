@@ -69,14 +69,25 @@ from pathlib import Path
 
 root = Path({str(ROOT)!r})
 scripts = [
+    "update_prices.py",
     "check_market_open_completeness.py",
     "backfill_market_open_prices.py",
     "check_market_open_completeness.py",
+    "check_price_quality.py",
+    "observe_latest.py",
+    "resolve_forward_outcomes.py",
+    "score_all_latest.py",
+    "make_trade_plan.py",
+    "forward_mr_gate_report.py",
+    "forward_runner_report.py",
+    "forward_calibration_report.py",
+    "generate_phase_h_status.py",
+    "build_static_dashboard.py",
 ]
 failed = 0
 for script in scripts:
     print(f"--- {{script}} ---")
-    result = subprocess.run([sys.executable, str(root / "scripts" / script)], cwd=root)
+    result = subprocess.run([sys.executable, str(root / "scripts" / script)], cwd=root, timeout=900)
     failed = failed or result.returncode
 sys.exit(failed)
 """
@@ -85,7 +96,7 @@ sys.exit(failed)
         cwd=ROOT,
         capture_output=True,
         text=True,
-        timeout=1200,
+        timeout=3600,
         check=False,
     )
 
@@ -141,14 +152,17 @@ def render_data_completeness(data, *, compact: bool = False) -> None:
     else:
         st.warning(note)
 
+    if not compact:
+        st.caption("GitHub Actions also runs this check/backfill loop automatically on the next scheduled dashboard update.")
+
     if st.button(
-        "Check and backfill missing prices",
+        "Run update and backfill now",
         icon=":material/sync:",
         type="primary",
         disabled=status != "RED",
         width="stretch" if compact else "content",
     ):
-        with st.status("Backfilling missing open-market bars from Yahoo...", expanded=True) as status_box:
+        with st.status("Updating prices, backfilling gaps, and rebuilding reports...", expanded=True) as status_box:
             result = run_price_backfill()
             if result.stdout:
                 st.code(result.stdout[-4000:])
