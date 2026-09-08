@@ -1,6 +1,6 @@
 # Phase H Status - Frozen Forward Validation
 
-**Generated:** 2026-09-07T21:32:10.979477
+**Generated:** 2026-09-08T00:22:55.974060
 
 ## 1. Phase H start date
 2026-08-30
@@ -15,46 +15,46 @@ H1.0
 8
 
 ## 5. Observation count by asset
-- ADAUSD: 4
-- AUDCAD: 4
-- AUDCHF: 4
-- AUDJPY: 4
-- AUDNZD: 4
-- AUDUSD: 4
-- AVAXUSD: 4
-- BCHUSD: 4
-- BNBUSD: 4
-- BTCUSD: 202
-- CADCHF: 4
-- CADJPY: 4
-- CHFJPY: 4
-- DOGEUSD: 4
-- DOTUSD: 4
-- ETHUSD: 202
-- EURAUD: 4
-- EURCAD: 142
-- EURCHF: 4
-- EURGBP: 4
-- EURJPY: 4
-- EURUSD: 4
-- GBPAUD: 4
-- GBPCAD: 4
-- GBPCHF: 4
-- GBPJPY: 4
-- GBPUSD: 4
+- ADAUSD: 5
+- AUDCAD: 6
+- AUDCHF: 5
+- AUDJPY: 6
+- AUDNZD: 6
+- AUDUSD: 6
+- AVAXUSD: 5
+- BCHUSD: 5
+- BNBUSD: 5
+- BTCUSD: 203
+- CADCHF: 6
+- CADJPY: 6
+- CHFJPY: 6
+- DOGEUSD: 5
+- DOTUSD: 5
+- ETHUSD: 203
+- EURAUD: 6
+- EURCAD: 144
+- EURCHF: 6
+- EURGBP: 6
+- EURJPY: 6
+- EURUSD: 6
+- GBPAUD: 6
+- GBPCAD: 6
+- GBPCHF: 6
+- GBPJPY: 6
+- GBPUSD: 6
 - GOLD: 119
-- LINKUSD: 4
-- LTCUSD: 4
-- NZDCAD: 4
-- NZDCHF: 4
-- NZDJPY: 4
-- NZDUSD: 4
-- SOLUSD: 4
+- LINKUSD: 5
+- LTCUSD: 5
+- NZDCAD: 6
+- NZDCHF: 6
+- NZDJPY: 6
+- NZDUSD: 6
+- SOLUSD: 5
 - US500: 36
-- USDCAD: 4
-- USDCHF: 4
-- USDJPY: 141
-- XRPUSD: 4
+- USDCAD: 6
+- USDCHF: 6
+- USDJPY: 143
+- XRPUSD: 5
 
 ## 6. MR candidates / resolved
 - 20 candidates, 0 resolved
