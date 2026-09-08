@@ -1,6 +1,6 @@
 # Phase H Status - Frozen Forward Validation
 
-**Generated:** 2026-09-08T09:37:45.325600
+**Generated:** 2026-09-08T13:53:14.393010
 
 ## 1. Phase H start date
 2026-08-30
@@ -12,60 +12,60 @@ H1.0
 0.45 (locked)
 
 ## 4. Days observed
-8
+9
 
 ## 5. Observation count by asset
-- ADAUSD: 16
-- AUDCAD: 16
-- AUDCHF: 16
-- AUDJPY: 16
-- AUDNZD: 16
-- AUDUSD: 16
+- ADAUSD: 20
+- AUDCAD: 20
+- AUDCHF: 20
+- AUDJPY: 20
+- AUDNZD: 20
+- AUDUSD: 20
 - AUS200: 7
-- AVAXUSD: 16
-- BCHUSD: 16
-- BNBUSD: 15
-- BRENT: 5
-- BTCUSD: 214
-- CADCHF: 16
-- CADJPY: 16
-- CHFJPY: 16
-- DOGEUSD: 16
-- DOTUSD: 14
-- ETHUSD: 214
-- EU50: 2
-- EURAUD: 16
-- EURCAD: 154
-- EURCHF: 16
-- EURGBP: 16
-- EURJPY: 16
-- EURUSD: 15
-- FRA40: 2
-- GBPAUD: 16
-- GBPCAD: 16
-- GBPCHF: 16
-- GBPJPY: 16
-- GBPUSD: 16
-- GER40: 2
-- GOLD: 124
+- AVAXUSD: 20
+- BCHUSD: 20
+- BNBUSD: 20
+- BRENT: 9
+- BTCUSD: 218
+- CADCHF: 20
+- CADJPY: 19
+- CHFJPY: 20
+- DOGEUSD: 20
+- DOTUSD: 20
+- ETHUSD: 218
+- EU50: 6
+- EURAUD: 20
+- EURCAD: 158
+- EURCHF: 20
+- EURGBP: 20
+- EURJPY: 20
+- EURUSD: 20
+- FRA40: 6
+- GBPAUD: 20
+- GBPCAD: 20
+- GBPCHF: 20
+- GBPJPY: 19
+- GBPUSD: 17
+- GER40: 6
+- GOLD: 128
 - HK50: 7
 - JPN225: 7
-- LINKUSD: 16
-- LTCUSD: 16
-- NATGAS: 5
-- NZDCAD: 16
-- NZDCHF: 16
-- NZDJPY: 16
-- NZDUSD: 16
-- SILVER: 5
-- SOLUSD: 16
-- UK100: 2
+- LINKUSD: 20
+- LTCUSD: 20
+- NATGAS: 9
+- NZDCAD: 20
+- NZDCHF: 20
+- NZDJPY: 20
+- NZDUSD: 20
+- SILVER: 9
+- SOLUSD: 20
+- UK100: 6
 - US500: 36
-- USDCAD: 16
-- USDCHF: 14
-- USDJPY: 153
-- WTI: 5
-- XRPUSD: 16
+- USDCAD: 20
+- USDCHF: 20
+- USDJPY: 156
+- WTI: 9
+- XRPUSD: 19
 
 ## 6. MR candidates / resolved
 - 20 candidates, 0 resolved
