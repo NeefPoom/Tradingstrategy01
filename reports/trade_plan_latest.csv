@@ -1,1 +1,2 @@
-
+asset,direction,signal_time,reference_entry_price,p_mr_win,p_mr_fail,pred_mr_return_pct,risk_status,stop_status,position_size
+BCHUSD,SHORT,2026-09-08 04:00:00,257.2699890136719,0.5096091234861728,0.28318856783319263,0.2135760403691497,max 0.5% equity,MANUAL_STOP_REQUIRED,POSITION_SIZE_PENDING_STOP
