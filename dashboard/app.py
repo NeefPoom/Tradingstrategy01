@@ -58,7 +58,7 @@ from dashboard.metrics import (
     win_loss_reason_table,
     yahoo_quality_summary,
 )
-from dashboard.simulator import historical_prices, simulate_strategy, simulator_figure, synthetic_prices
+from dashboard.simulator import INTERVALS, historical_prices, simulate_strategy, simulator_figure, synthetic_prices
 from hybrid_ml.config import load_config
 from hybrid_ml.mr_policy import detect_mr_setup
 
@@ -669,7 +669,7 @@ def page_strategy_visual_simulator(data):
     if not data.asset_registry.empty and "asset" in data.asset_registry:
         asset_options = data.asset_registry["asset"].astype(str).tolist()
 
-    left, mid, right = st.columns([1, 1, 1])
+    left, mid, extra, right = st.columns([1, 1, 1, 1])
     with left:
         asset_profile = st.selectbox("Asset profile", asset_options, index=asset_options.index("GOLD") if "GOLD" in asset_options else 0)
     with mid:
@@ -678,6 +678,8 @@ def page_strategy_visual_simulator(data):
             ["MIXED", "TREND UP", "TREND DOWN", "MEAN REVERSION", "CHOP / WHIPSAW", "VOLATILITY SHOCK"],
             disabled=mode == "Historical Replay",
         )
+    with extra:
+        resolution = st.selectbox("Replay resolution", list(INTERVALS), disabled=mode == "Historical Replay")
     with right:
         apply_gate = st.toggle("Apply MR_FAIL ML gate", value=True)
 
@@ -686,29 +688,37 @@ def page_strategy_visual_simulator(data):
         st.rerun()
 
     seed = int(st.session_state.sim_seed)
+    freq, multiplier = INTERVALS.get(resolution, INTERVALS["1H - real Phase H baseline"])
+    visible_bars = 200 * multiplier
     if mode == "Synthetic Random":
-        prices = synthetic_prices(seed, "MIXED", asset_profile)
-        source_label = f"Synthetic random path #{seed}"
+        prices = synthetic_prices(seed, "MIXED", asset_profile, visible_bars=visible_bars, freq=freq)
+        source_label = f"Synthetic random path #{seed} at {resolution}"
     elif mode == "Historical Replay":
         prices = historical_prices(asset_profile, seed)
+        visible_bars = 200
         source_label = f"Historical Yahoo 1H replay sample #{seed}"
     else:
-        prices = synthetic_prices(seed, regime, asset_profile)
-        source_label = f"Synthetic {regime.lower()} path #{seed}"
+        prices = synthetic_prices(seed, regime, asset_profile, visible_bars=visible_bars, freq=freq)
+        source_label = f"Synthetic {regime.lower()} path #{seed} at {resolution}"
 
     cfg = load_config()
-    result = simulate_strategy(prices, cfg, apply_gate=apply_gate)
-    no_gate_result = simulate_strategy(prices, cfg, apply_gate=False)
-    gate_result = simulate_strategy(prices, cfg, apply_gate=True)
+    result = simulate_strategy(prices, cfg, apply_gate=apply_gate, visible_bars=visible_bars)
+    no_gate_result = simulate_strategy(prices, cfg, apply_gate=False, visible_bars=visible_bars)
+    gate_result = simulate_strategy(prices, cfg, apply_gate=True, visible_bars=visible_bars)
 
     st.info(
         f"{source_label}. P&L engine: Real Strategy Resolver. MR uses the frozen Phase H rule: 1 ATR TP1, 1 ATR stop, bar-by-bar high/low resolution. Runner then uses the oscillator-cross exit research logic.",
         icon=":material/query_stats:",
     )
+    if mode != "Historical Replay" and multiplier > 1:
+        st.warning(
+            "Higher synthetic resolution is useful for studying faster oscillator crosses, but the current collected data and frozen ML models are still 1H. Treat 30m/15m synthetic results as exploratory, not Phase H evidence.",
+            icon=":material/speed:",
+        )
 
     st.subheader("Simulation results")
     with st.container(horizontal=True):
-        st.metric("Displayed bars", len(result.features), border=True)
+        st.metric("Displayed points", len(result.features), border=True)
         st.metric("Trades", result.summary["Trades"], border=True)
         st.metric("Win rate", result.summary["Win rate"], border=True)
         st.metric("PF", result.summary["PF"], border=True)

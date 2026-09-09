@@ -26,6 +26,11 @@ from hybrid_ml.mr_policy import MR_FAIL_THRESHOLD, detect_mr_setup
 WARMUP_BARS = 260
 VISIBLE_BARS = 200
 MODEL_DIR = ROOT / "models"
+INTERVALS = {
+    "1H - real Phase H baseline": ("1h", 1),
+    "30m - exploratory synthetic": ("30min", 2),
+    "15m - exploratory synthetic": ("15min", 4),
+}
 
 
 REGIME_PARAMS = {
@@ -80,7 +85,7 @@ def _synthetic_close(seed: int, regime: str, asset_profile: str, bars: int) -> n
     return close
 
 
-def synthetic_prices(seed: int, regime: str, asset_profile: str, visible_bars: int = VISIBLE_BARS) -> pd.DataFrame:
+def synthetic_prices(seed: int, regime: str, asset_profile: str, visible_bars: int = VISIBLE_BARS, freq: str = "1h") -> pd.DataFrame:
     bars = visible_bars + WARMUP_BARS
     close = _synthetic_close(seed, regime, asset_profile, bars)
     rng = np.random.default_rng(seed + 101)
@@ -89,7 +94,7 @@ def synthetic_prices(seed: int, regime: str, asset_profile: str, visible_bars: i
     high = np.maximum(open_, close) * (1 + span)
     low = np.minimum(open_, close) * (1 - span)
     volume = rng.integers(500, 5000, bars)
-    timestamps = pd.date_range("2026-01-01", periods=bars, freq="1h")
+    timestamps = pd.date_range("2026-01-01", periods=bars, freq=freq)
     return pd.DataFrame({"timestamp": timestamps, "open": open_, "high": high, "low": low, "close": close, "volume": volume})
 
 
@@ -156,7 +161,7 @@ def _add_prev_columns(features: pd.DataFrame) -> pd.DataFrame:
     return out
 
 
-def simulate_strategy(prices: pd.DataFrame, cfg: dict[str, Any], apply_gate: bool) -> SimulationResult:
+def simulate_strategy(prices: pd.DataFrame, cfg: dict[str, Any], apply_gate: bool, visible_bars: int = VISIBLE_BARS) -> SimulationResult:
     """Replay MR candidates with the same Phase H MR resolver assumptions.
 
     MR entry/setup/gate uses the frozen policy. Outcome resolution is bar-by-bar:
@@ -164,7 +169,7 @@ def simulate_strategy(prices: pd.DataFrame, cfg: dict[str, Any], apply_gate: boo
     runner follows the oscillator-cross exit research method.
     """
     feats = _add_prev_columns(build_features(prices, cfg)).dropna(subset=["osc", "signal", "atr"]).reset_index(drop=True)
-    feats = feats.tail(VISIBLE_BARS).reset_index(drop=True)
+    feats = feats.tail(visible_bars).reset_index(drop=True)
     state = "FLAT"
     entry: dict[str, Any] | None = None
     events: list[dict[str, Any]] = []
@@ -241,7 +246,7 @@ def simulate_strategy(prices: pd.DataFrame, cfg: dict[str, Any], apply_gate: boo
                 or (entry["direction"] == "SHORT" and float(row["osc_prev"]) <= float(row["signal_prev"]) and float(row["osc"]) > float(row["signal"]))
             )
             age = i - int(entry["idx"])
-            if hit_stop or cross_against or age >= VISIBLE_BARS:
+            if hit_stop or cross_against or age >= visible_bars:
                 exit_price = stop if hit_stop else close
                 runner_ret = (exit_price / runner_entry - 1) * direction * 100
                 # A half TP1 / half runner blend mirrors the documented partial-profit lifecycle.

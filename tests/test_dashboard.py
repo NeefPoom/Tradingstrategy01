@@ -220,3 +220,11 @@ def test_strategy_visual_simulator_produces_200_hour_replay():
     assert {"osc", "signal", "p_mr_fail", "p_mr_win"}.issubset(result.features.columns)
     if not result.trades.empty:
         assert {"MR leg %", "Runner leg %"}.issubset(result.trades.columns)
+
+
+def test_strategy_visual_simulator_can_increase_synthetic_resolution():
+    visible_bars = 800
+    prices = synthetic_prices(seed=7, regime="MIXED", asset_profile="GOLD", visible_bars=visible_bars, freq="15min")
+    result = simulate_strategy(prices, load_config(), apply_gate=True, visible_bars=visible_bars)
+    assert len(result.features) == visible_bars
+    assert result.features["timestamp"].diff().dropna().mode().iloc[0] == pd.Timedelta(minutes=15)
