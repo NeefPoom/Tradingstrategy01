@@ -157,6 +157,12 @@ def _add_prev_columns(features: pd.DataFrame) -> pd.DataFrame:
 
 
 def simulate_strategy(prices: pd.DataFrame, cfg: dict[str, Any], apply_gate: bool) -> SimulationResult:
+    """Replay MR candidates with the same Phase H MR resolver assumptions.
+
+    MR entry/setup/gate uses the frozen policy. Outcome resolution is bar-by-bar:
+    stop = 1 ATR against entry, TP1 = 1 ATR in favor. After TP1, the remaining
+    runner follows the oscillator-cross exit research method.
+    """
     feats = _add_prev_columns(build_features(prices, cfg)).dropna(subset=["osc", "signal", "atr"]).reset_index(drop=True)
     feats = feats.tail(VISIBLE_BARS).reset_index(drop=True)
     state = "FLAT"
@@ -189,6 +195,7 @@ def simulate_strategy(prices: pd.DataFrame, cfg: dict[str, Any], apply_gate: boo
                 "idx": i,
                 "timestamp": row["timestamp"],
                 "price": close,
+                "atr": atr,
                 "direction": setup["direction"],
                 "p_mr_fail": p_fail,
                 "p_mr_win": float(row["p_mr_win"]),
@@ -201,46 +208,63 @@ def simulate_strategy(prices: pd.DataFrame, cfg: dict[str, Any], apply_gate: boo
 
         if state.startswith("MR_") and entry:
             direction = 1 if entry["direction"] == "LONG" else -1
-            ret = (close / entry["price"] - 1) * direction * 100
-            fail_level = -max((2.0 * atr / entry["price"]) * 100, 0.35)
-            hit_fail = ret <= fail_level
-            hit_zero = (entry["direction"] == "LONG" and float(row["osc"]) >= 0) or (entry["direction"] == "SHORT" and float(row["osc"]) <= 0)
-            if hit_fail or hit_zero:
+            tp = float(entry["price"]) + direction * float(entry["atr"])
+            stop = float(entry["price"]) - direction * float(entry["atr"])
+            hit_fail = (direction == 1 and float(row["low"]) <= stop) or (direction == -1 and float(row["high"]) >= stop)
+            hit_tp = (direction == 1 and float(row["high"]) >= tp) or (direction == -1 and float(row["low"]) <= tp)
+            if hit_fail or hit_tp:
                 exit_event = "MR FAIL" if hit_fail else "TP1"
                 state_after = "FLAT" if hit_fail else f"RUNNER_{entry['direction']}"
-                events.append({"idx": i, "timestamp": row["timestamp"], "price": close, "event": exit_event, "direction": entry["direction"], "reason": "stop by adverse move" if hit_fail else "oscillator reached zero"})
+                exit_price = stop if hit_fail else tp
+                mr_ret = (exit_price / float(entry["price"]) - 1) * direction * 100
+                events.append({"idx": i, "timestamp": row["timestamp"], "price": exit_price, "event": exit_event, "direction": entry["direction"], "reason": "1 ATR stop hit before TP1" if hit_fail else "1 ATR TP1 hit"})
                 if hit_fail:
-                    trades.append(_trade_row(entry, row, ret, "MR_FAIL", entry["state_path"] + " -> MR_FAIL -> CLOSE"))
+                    trades.append(_trade_row(entry, row, mr_ret, "MR_FAIL", entry["state_path"] + " -> MR_FAIL -> CLOSE", exit_price=exit_price, mr_return=mr_ret, runner_return=None))
                     entry = None
                     state = "FLAT"
                 else:
-                    entry["state_path"] += f" -> TP1_ZERO -> {state_after}"
-                    entry["runner_entry_price"] = close
-                    events.append({"idx": i, "timestamp": row["timestamp"], "price": close, "event": "RUNNER", "direction": entry["direction"], "reason": "runner position opened after TP1"})
+                    entry["state_path"] += f" -> TP1_1ATR -> {state_after}"
+                    entry["mr_return"] = mr_ret
+                    entry["runner_entry_price"] = exit_price
+                    entry["runner_stop"] = stop
+                    events.append({"idx": i, "timestamp": row["timestamp"], "price": exit_price, "event": "RUNNER", "direction": entry["direction"], "reason": "runner position opened after 1 ATR TP1"})
                     state = state_after
                 continue
 
         if state.startswith("RUNNER_") and entry:
             direction = 1 if entry["direction"] == "LONG" else -1
-            ret = (close / entry["price"] - 1) * direction * 100
+            runner_entry = float(entry["runner_entry_price"])
+            stop = float(entry["runner_stop"])
+            hit_stop = (direction == 1 and float(row["low"]) <= stop) or (direction == -1 and float(row["high"]) >= stop)
             cross_against = (
-                (entry["direction"] == "LONG" and float(row["osc"]) < float(row["signal"]))
-                or (entry["direction"] == "SHORT" and float(row["osc"]) > float(row["signal"]))
+                (entry["direction"] == "LONG" and float(row["osc_prev"]) >= float(row["signal_prev"]) and float(row["osc"]) < float(row["signal"]))
+                or (entry["direction"] == "SHORT" and float(row["osc_prev"]) <= float(row["signal_prev"]) and float(row["osc"]) > float(row["signal"]))
             )
             age = i - int(entry["idx"])
-            if cross_against or age >= 48:
-                reason = "opposite oscillator/signal cross" if cross_against else "48h max demo hold"
-                events.append({"idx": i, "timestamp": row["timestamp"], "price": close, "event": "CLOSE", "direction": entry["direction"], "reason": reason})
-                trades.append(_trade_row(entry, row, ret, "RUNNER_EXIT", entry["state_path"] + " -> EXIT_RUNNER -> FLAT"))
+            if hit_stop or cross_against or age >= VISIBLE_BARS:
+                exit_price = stop if hit_stop else close
+                runner_ret = (exit_price / runner_entry - 1) * direction * 100
+                # A half TP1 / half runner blend mirrors the documented partial-profit lifecycle.
+                total_ret = 0.5 * float(entry["mr_return"]) + 0.5 * runner_ret
+                reason = "original 1 ATR stop hit" if hit_stop else "opposite oscillator/signal cross" if cross_against else "end of replay window"
+                events.append({"idx": i, "timestamp": row["timestamp"], "price": exit_price, "event": "CLOSE", "direction": entry["direction"], "reason": reason})
+                trades.append(_trade_row(entry, row, total_ret, "RUNNER_EXIT", entry["state_path"] + " -> EXIT_RUNNER -> FLAT", exit_price=exit_price, mr_return=entry["mr_return"], runner_return=runner_ret))
                 entry = None
                 state = "FLAT"
 
     if entry is not None and len(feats):
         row = feats.iloc[-1]
         direction = 1 if entry["direction"] == "LONG" else -1
-        ret = (float(row["close"]) / entry["price"] - 1) * direction * 100
+        if "runner_entry_price" in entry:
+            runner_ret = (float(row["close"]) / float(entry["runner_entry_price"]) - 1) * direction * 100
+            ret = 0.5 * float(entry["mr_return"]) + 0.5 * runner_ret
+            mr_ret = entry["mr_return"]
+        else:
+            runner_ret = None
+            ret = (float(row["close"]) / entry["price"] - 1) * direction * 100
+            mr_ret = ret
         events.append({"idx": len(feats) - 1, "timestamp": row["timestamp"], "price": float(row["close"]), "event": "CLOSE", "direction": entry["direction"], "reason": "end of 200h simulation"})
-        trades.append(_trade_row(entry, row, ret, "END_OF_PATH", entry["state_path"] + " -> CLOSE"))
+        trades.append(_trade_row(entry, row, ret, "END_OF_PATH", entry["state_path"] + " -> CLOSE", mr_return=mr_ret, runner_return=runner_ret))
 
     events_df = pd.DataFrame(events)
     trades_df = pd.DataFrame(trades)
@@ -248,15 +272,18 @@ def simulate_strategy(prices: pd.DataFrame, cfg: dict[str, Any], apply_gate: boo
     return SimulationResult(prices=feats, features=feats, events=events_df, trades=trades_df, summary=summary)
 
 
-def _trade_row(entry: dict[str, Any], exit_row: pd.Series, ret: float, exit_reason: str, state_path: str) -> dict[str, Any]:
+def _trade_row(entry: dict[str, Any], exit_row: pd.Series, ret: float, exit_reason: str, state_path: str, exit_price: float | None = None, mr_return: float | None = None, runner_return: float | None = None) -> dict[str, Any]:
+    close = float(exit_row["close"]) if exit_price is None else float(exit_price)
     return {
         "Entry": entry["timestamp"],
         "Exit": exit_row["timestamp"],
         "Type": entry["direction"],
         "Gate": entry["gate"],
         "Entry price": round(float(entry["price"]), 5),
-        "Exit price": round(float(exit_row["close"]), 5),
+        "Exit price": round(close, 5),
         "Return %": round(float(ret), 3),
+        "MR leg %": round(float(mr_return), 3) if mr_return is not None else None,
+        "Runner leg %": round(float(runner_return), 3) if runner_return is not None else None,
         "p_mr_fail": round(float(entry["p_mr_fail"]), 3),
         "p_mr_win": round(float(entry["p_mr_win"]), 3),
         "Exit reason": exit_reason,

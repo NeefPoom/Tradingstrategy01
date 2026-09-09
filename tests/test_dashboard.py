@@ -218,3 +218,5 @@ def test_strategy_visual_simulator_produces_200_hour_replay():
     assert len(result.features) == 200
     assert {"Trades", "Win rate", "PF", "Net P&L", "Max DD"}.issubset(result.summary)
     assert {"osc", "signal", "p_mr_fail", "p_mr_win"}.issubset(result.features.columns)
+    if not result.trades.empty:
+        assert {"MR leg %", "Runner leg %"}.issubset(result.trades.columns)

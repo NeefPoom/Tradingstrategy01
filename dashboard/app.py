@@ -702,7 +702,7 @@ def page_strategy_visual_simulator(data):
     gate_result = simulate_strategy(prices, cfg, apply_gate=True)
 
     st.info(
-        f"{source_label}. The simulator reuses the real feature pipeline and MR setup detector, then runs a simplified research lifecycle: FLAT -> MR -> TP1/FAIL -> RUNNER -> CLOSE.",
+        f"{source_label}. P&L engine: Real Strategy Resolver. MR uses the frozen Phase H rule: 1 ATR TP1, 1 ATR stop, bar-by-bar high/low resolution. Runner then uses the oscillator-cross exit research logic.",
         icon=":material/query_stats:",
     )
 
