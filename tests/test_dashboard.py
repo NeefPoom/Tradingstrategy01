@@ -30,6 +30,8 @@ from dashboard.metrics import (
     strategy_return_correlation,
     win_loss_reason_table,
 )
+from dashboard.simulator import simulate_strategy, synthetic_prices
+from hybrid_ml.config import load_config
 
 
 def test_dashboard_loader_works_with_missing_runner_file(monkeypatch, tmp_path):
@@ -208,3 +210,11 @@ def test_common_forward_window_uses_shared_asset_span():
     assert str(window["start"]) == "2026-09-02 00:00:00"
     assert str(window["end"]) == "2026-09-04 00:00:00"
     assert window["usable"] is True
+
+
+def test_strategy_visual_simulator_produces_200_hour_replay():
+    prices = synthetic_prices(seed=7, regime="MIXED", asset_profile="GOLD")
+    result = simulate_strategy(prices, load_config(), apply_gate=True)
+    assert len(result.features) == 200
+    assert {"Trades", "Win rate", "PF", "Net P&L", "Max DD"}.issubset(result.summary)
+    assert {"osc", "signal", "p_mr_fail", "p_mr_win"}.issubset(result.features.columns)

@@ -2,10 +2,13 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from functools import lru_cache
+import json
 from pathlib import Path
 import sys
 from typing import Any
 
+import joblib
 import numpy as np
 import pandas as pd
 import plotly.graph_objects as go
@@ -22,6 +25,7 @@ from hybrid_ml.mr_policy import MR_FAIL_THRESHOLD, detect_mr_setup
 
 WARMUP_BARS = 260
 VISIBLE_BARS = 200
+MODEL_DIR = ROOT / "models"
 
 
 REGIME_PARAMS = {
@@ -117,12 +121,38 @@ def _p_win(row: pd.Series) -> float:
     return float(np.clip(1.0 - _p_fail(row) + 0.05, 0.03, 0.97))
 
 
+@lru_cache(maxsize=1)
+def _load_probability_models() -> tuple[list[str], Any | None, Any | None]:
+    try:
+        columns = json.loads((MODEL_DIR / "feature_columns.json").read_text(encoding="utf-8"))
+        fail_model = joblib.load(MODEL_DIR / "mr_fail_classifier.joblib")
+        win_model = joblib.load(MODEL_DIR / "mr_win_classifier.joblib")
+        return columns, fail_model, win_model
+    except Exception:
+        return [], None, None
+
+
+def _model_probabilities(features: pd.DataFrame) -> tuple[pd.Series | None, pd.Series | None]:
+    columns, fail_model, win_model = _load_probability_models()
+    if not columns or fail_model is None or win_model is None:
+        return None, None
+    try:
+        matrix = features.reindex(columns=columns)
+        matrix = matrix.replace([np.inf, -np.inf], np.nan).ffill().bfill().fillna(0)
+        p_fail = pd.Series(fail_model.predict_proba(matrix)[:, 1], index=features.index)
+        p_win = pd.Series(win_model.predict_proba(matrix)[:, 1], index=features.index)
+        return p_fail.clip(0.0, 1.0), p_win.clip(0.0, 1.0)
+    except Exception:
+        return None, None
+
+
 def _add_prev_columns(features: pd.DataFrame) -> pd.DataFrame:
     out = features.copy()
     out["osc_prev"] = out["osc"].shift(1)
     out["signal_prev"] = out["signal"].shift(1)
-    out["p_mr_fail"] = out.apply(_p_fail, axis=1)
-    out["p_mr_win"] = out.apply(_p_win, axis=1)
+    p_fail, p_win = _model_probabilities(out)
+    out["p_mr_fail"] = p_fail if p_fail is not None else out.apply(_p_fail, axis=1)
+    out["p_mr_win"] = p_win if p_win is not None else out.apply(_p_win, axis=1)
     return out
 
 
@@ -186,6 +216,7 @@ def simulate_strategy(prices: pd.DataFrame, cfg: dict[str, Any], apply_gate: boo
                 else:
                     entry["state_path"] += f" -> TP1_ZERO -> {state_after}"
                     entry["runner_entry_price"] = close
+                    events.append({"idx": i, "timestamp": row["timestamp"], "price": close, "event": "RUNNER", "direction": entry["direction"], "reason": "runner position opened after TP1"})
                     state = state_after
                 continue
 
@@ -265,6 +296,7 @@ def simulator_figure(result: SimulationResult) -> go.Figure:
             "LONG MR": ("triangle-up", "#22c55e"),
             "SHORT MR": ("triangle-down", "#ef4444"),
             "TP1": ("circle", "#38bdf8"),
+            "RUNNER": ("diamond", "#a78bfa"),
             "MR FAIL": ("x", "#fb7185"),
             "CLOSE": ("square", "#e5e7eb"),
             "BLOCKED": ("diamond", "#f59e0b"),
