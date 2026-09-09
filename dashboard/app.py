@@ -10,6 +10,9 @@ import streamlit as st
 ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
+SRC = ROOT / "src"
+if str(SRC) not in sys.path:
+    sys.path.insert(0, str(SRC))
 
 from dashboard import charts
 from dashboard.components import dataframe_or_empty, frozen_controls_panel, inject_css, metric_card, progress, status_pill
@@ -55,6 +58,9 @@ from dashboard.metrics import (
     win_loss_reason_table,
     yahoo_quality_summary,
 )
+from dashboard.simulator import historical_prices, simulate_strategy, simulator_figure, synthetic_prices
+from hybrid_ml.config import load_config
+from hybrid_ml.mr_policy import detect_mr_setup
 
 
 st.set_page_config(page_title="Hybrid MR-TF - Phase H", layout="wide")
@@ -207,6 +213,7 @@ def sidebar(data):
             "MR_FAIL Monitor",
             "Trade Simulation",
             "Asset Selection Lab",
+            "Strategy Visual Simulator",
             "MR Gate Analysis",
             "Runner Research",
             "Assets",
@@ -646,6 +653,118 @@ def page_asset_selection_lab(data):
     )
 
 
+def page_strategy_visual_simulator(data):
+    st.title("Strategy visual simulator")
+    st.caption("Educational / research simulation. Synthetic performance is not evidence of real-market profitability.")
+
+    if "sim_seed" not in st.session_state:
+        st.session_state.sim_seed = 7
+
+    mode = st.segmented_control(
+        "Mode",
+        ["Synthetic Random", "Synthetic Regime", "Historical Replay"],
+        default="Synthetic Regime",
+    )
+    asset_options = ["GOLD", "USDJPY", "US500", "BTCUSD", "ETHUSD", "EURCAD"]
+    if not data.asset_registry.empty and "asset" in data.asset_registry:
+        asset_options = data.asset_registry["asset"].astype(str).tolist()
+
+    left, mid, right = st.columns([1, 1, 1])
+    with left:
+        asset_profile = st.selectbox("Asset profile", asset_options, index=asset_options.index("GOLD") if "GOLD" in asset_options else 0)
+    with mid:
+        regime = st.selectbox(
+            "Regime",
+            ["MIXED", "TREND UP", "TREND DOWN", "MEAN REVERSION", "CHOP / WHIPSAW", "VOLATILITY SHOCK"],
+            disabled=mode == "Historical Replay",
+        )
+    with right:
+        apply_gate = st.toggle("Apply MR_FAIL ML gate", value=True)
+
+    if st.button("Random new path", icon=":material/refresh:", type="primary"):
+        st.session_state.sim_seed += 1
+        st.rerun()
+
+    seed = int(st.session_state.sim_seed)
+    if mode == "Synthetic Random":
+        prices = synthetic_prices(seed, "MIXED", asset_profile)
+        source_label = f"Synthetic random path #{seed}"
+    elif mode == "Historical Replay":
+        prices = historical_prices(asset_profile, seed)
+        source_label = f"Historical Yahoo 1H replay sample #{seed}"
+    else:
+        prices = synthetic_prices(seed, regime, asset_profile)
+        source_label = f"Synthetic {regime.lower()} path #{seed}"
+
+    cfg = load_config()
+    result = simulate_strategy(prices, cfg, apply_gate=apply_gate)
+    no_gate_result = simulate_strategy(prices, cfg, apply_gate=False)
+    gate_result = simulate_strategy(prices, cfg, apply_gate=True)
+
+    st.info(
+        f"{source_label}. The simulator reuses the real feature pipeline and MR setup detector, then runs a simplified research lifecycle: FLAT -> MR -> TP1/FAIL -> RUNNER -> CLOSE.",
+        icon=":material/query_stats:",
+    )
+
+    st.subheader("Simulation results")
+    with st.container(horizontal=True):
+        st.metric("Displayed bars", len(result.features), border=True)
+        st.metric("Trades", result.summary["Trades"], border=True)
+        st.metric("Win rate", result.summary["Win rate"], border=True)
+        st.metric("PF", result.summary["PF"], border=True)
+        st.metric("Net P&L", result.summary["Net P&L"], border=True)
+        st.metric("Max DD", result.summary["Max DD"], border=True)
+
+    compare = pd.DataFrame(
+        [
+            {"Version": "Without ML Gate", **no_gate_result.summary},
+            {"Version": "With ML Gate", **gate_result.summary},
+        ]
+    )
+    st.subheader("Without ML gate vs with ML gate")
+    dataframe_or_empty(compare, "No comparison yet.", height=120)
+
+    st.subheader("Price / position and oscillator")
+    st.plotly_chart(simulator_figure(result), width="stretch")
+
+    st.subheader("ML / state panel")
+    if result.features.empty:
+        st.info("Not enough bars after feature warmup.")
+    else:
+        latest = result.features.iloc[-1]
+        detected = detect_mr_setup(latest)
+        setup = detected["direction"] if detected["setup"] else "NO"
+        setup_reason = detected["reason"]
+        with st.container(horizontal=True):
+            st.metric("ER 10", num(latest.get("er_10"), 3), border=True)
+            st.metric("NATR", num(latest.get("natr"), 3), border=True)
+            st.metric("Vol ratio", num(latest.get("vol_ratio"), 2), border=True)
+            st.metric("Cross count", num(latest.get("cross_count"), 0), border=True)
+            st.metric("p_mr_win", num(latest.get("p_mr_win"), 2), border=True)
+            st.metric("p_mr_fail", num(latest.get("p_mr_fail"), 2), border=True)
+            st.metric("MR setup", setup, border=True)
+            st.metric("MR gate", "PASS" if float(latest.get("p_mr_fail", 1)) <= MR_FAIL_THRESHOLD else "BLOCK", border=True)
+        st.caption(f"Latest setup reason: {setup_reason}")
+
+    st.subheader("State transition events")
+    event_cols = ["idx", "timestamp", "event", "direction", "price", "reason"]
+    events = result.events.copy()
+    if not events.empty and "timestamp" in events:
+        events["timestamp"] = pd.to_datetime(events["timestamp"], errors="coerce").dt.strftime("%Y-%m-%d %H:%M")
+    dataframe_or_empty(events[[c for c in event_cols if c in events]], "No strategy events on this path.", height=260)
+
+    st.subheader("Trade log")
+    trades = result.trades.copy()
+    for col in ["Entry", "Exit"]:
+        if not trades.empty and col in trades:
+            trades[col] = pd.to_datetime(trades[col], errors="coerce").dt.strftime("%Y-%m-%d %H:%M")
+    dataframe_or_empty(trades, "No completed trades on this path.", height=320)
+    st.warning(
+        "Do not use this simulator to choose parameters or claim profitability. It explains strategy mechanics under controlled paths; real evidence still comes from backtest and Phase H forward validation.",
+        icon=":material/warning:",
+    )
+
+
 def page_mr_gate(data):
     st.title("MR Gate Analysis")
     impact = gate_impact(data.mr_candidates)
@@ -759,6 +878,8 @@ def main():
         page_trade_simulation(data)
     elif page == "Asset Selection Lab":
         page_asset_selection_lab(data)
+    elif page == "Strategy Visual Simulator":
+        page_strategy_visual_simulator(data)
     elif page == "MR Gate Analysis":
         page_mr_gate(data)
     elif page == "Runner Research":
