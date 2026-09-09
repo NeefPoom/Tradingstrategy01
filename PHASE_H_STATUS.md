@@ -1,6 +1,6 @@
 # Phase H Status - Frozen Forward Validation
 
-**Generated:** 2026-09-09T10:17:30.718168
+**Generated:** 2026-09-09T10:27:08.325391
 
 ## 1. Phase H start date
 2026-08-30
@@ -18,7 +18,7 @@ H1.0
 - ADAUSD: 41
 - AUDCAD: 41
 - AUDCHF: 41
-- AUDJPY: 40
+- AUDJPY: 41
 - AUDNZD: 41
 - AUDUSD: 41
 - AUS200: 14
@@ -60,7 +60,7 @@ H1.0
 - NZDUSD: 41
 - SILVER: 29
 - SOLUSD: 41
-- UK100: 11
+- UK100: 12
 - US30: 7
 - US500: 43
 - USDCAD: 41
