@@ -17,6 +17,8 @@ from dashboard.data_loader import (
     load_parquet_or_csv,
     load_asset_registry,
     normalize_actions,
+    parse_phase_h_status,
+    scheduler_status,
 )
 from dashboard.metrics import asset_summary, current_state_table, mr_forward_metrics
 from dashboard.metrics import yahoo_quality_summary
@@ -88,6 +90,15 @@ def test_parquet_to_csv_fallback_works(tmp_path):
     pd.DataFrame({"asset": ["GOLD"]}).to_csv(csv, index=False)
     df = load_parquet_or_csv(tmp_path / "missing.parquet", csv)
     assert df.iloc[0]["asset"] == "GOLD"
+
+
+def test_status_and_scheduler_expose_overall_success_times():
+    status = parse_phase_h_status(
+        "# Phase H Status\n\n**Generated:** 2026-09-11T01:06:09.678922\n\n## 4. Days observed\n11\n\n## 15. Decision\nCONTINUE_FORWARD_VALIDATION"
+    )
+    health = scheduler_status({"last_finish": "2026-09-11T01:06:09Z", "exit_code": 0, "status": "SUCCESS"})
+    assert status["generated_at"] == "2026-09-11T01:06:09.678922"
+    assert health["last_successful_run"] == "2026-09-11T01:06:09Z"
 
 
 def test_refresh_data_does_not_modify_research_files():
