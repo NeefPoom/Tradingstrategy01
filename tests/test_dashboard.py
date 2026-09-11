@@ -167,6 +167,11 @@ def test_scheduler_history_marks_no_run_hours_backfilled_later():
     assert hour["Successful runs"] == 0
     assert hour["Covered assets"] == 2
     assert hour["Coverage status"] == "BACKFILLED LATER"
+    assert hour["Recovery type"] == "MISSED RUN, RECOVERED"
+    assert hour["Recovery summary"] == (
+        "No local run completed in this hour; recovered later by scoring 2 assets from "
+        "2026-09-11 10:05:00 ICT (+07:00) to 2026-09-11 10:06:00 ICT (+07:00)."
+    )
     assert hour["First scored at"] == "2026-09-11 10:05:00 ICT (+07:00)"
 
 

@@ -855,9 +855,26 @@ def page_health(data):
         st.metric("Yahoo quality", quality_status, border=True)
         st.metric("Scheduler log", data.scheduler.get("status", "UNKNOWN"), border=True)
     st.caption("This is one system-level status row. Asset-by-asset freshness remains below for diagnostics only.")
+
+    recovered = data.scheduler_history[data.scheduler_history.get("Recovery type", pd.Series(dtype=str)).eq("MISSED RUN, RECOVERED")]
+    st.subheader("Missed runs recovered by backfill")
+    recovered_columns = [
+        "Hour",
+        "Recovery summary",
+        "Covered assets",
+        "First scored at",
+        "Last scored at",
+        "Latest status",
+    ]
+    dataframe_or_empty(
+        recovered[[column for column in recovered_columns if column in recovered.columns]].head(24),
+        "No missed local run has needed backfill recovery in the last 3 days.",
+        height=220,
+    )
+
     st.subheader("Local scheduled runs, last 3 days by hour")
     dataframe_or_empty(data.scheduler_history, "No local scheduler run history available.", height=260)
-    st.caption("NO RUN means the local task did not finish in that clock hour. BACKFILLED LATER means observations for that source-bar hour were scored later; First/Last scored at shows when the delayed coverage happened.")
+    st.caption("Read Recovery summary first. It states whether the hour ran locally or was recovered later, and shows the exact recovery time window.")
 
     left, right = st.columns(2)
     with left:

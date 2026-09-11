@@ -372,7 +372,10 @@ def _observation_coverage_by_hour(observations: pd.DataFrame, now: datetime | No
 
 
 def _add_observation_coverage(history: pd.DataFrame, observations: pd.DataFrame, now: datetime | None = None, hours: int = 72) -> pd.DataFrame:
-    history = history.drop(columns=["Covered assets", "First scored at", "Last scored at", "Coverage status"], errors="ignore")
+    history = history.drop(
+        columns=["Covered assets", "First scored at", "Last scored at", "Coverage status", "Recovery type", "Recovery summary"],
+        errors="ignore",
+    )
     coverage = _observation_coverage_by_hour(observations, now=now, hours=hours)
     if coverage.empty:
         history = history.copy()
@@ -396,13 +399,42 @@ def _add_observation_coverage(history: pd.DataFrame, observations: pd.DataFrame,
             return "BACKFILLED LATER"
         return "NO LOCAL RUN / NO OBS"
 
+    def recovery_type(row: pd.Series) -> str:
+        successful = int(row.get("Successful runs", 0) or 0)
+        covered = int(row.get("Covered assets", 0) or 0)
+        if successful > 0 and covered > 0:
+            return "LIVE RUN COVERED"
+        if successful > 0:
+            return "RUN WITHOUT OBS"
+        if covered > 0:
+            return "MISSED RUN, RECOVERED"
+        return "MISSED RUN, NOT RECOVERED"
+
+    def recovery_summary(row: pd.Series) -> str:
+        successful = int(row.get("Successful runs", 0) or 0)
+        covered = int(row.get("Covered assets", 0) or 0)
+        last_success = str(row.get("Last successful run") or "n/a")
+        first_scored = str(row.get("First scored at") or "n/a")
+        last_scored = str(row.get("Last scored at") or "n/a")
+        if successful > 0 and covered > 0:
+            return f"Ran in this hour; scored {covered} assets from {first_scored} to {last_scored}."
+        if successful > 0:
+            return f"Ran in this hour at {last_success}; no observations scored for this bar hour yet."
+        if covered > 0:
+            return f"No local run completed in this hour; recovered later by scoring {covered} assets from {first_scored} to {last_scored}."
+        return "No local run completed in this hour; not recovered by scored observations yet."
+
     history["Coverage status"] = history.apply(coverage_status, axis=1)
+    history["Recovery type"] = history.apply(recovery_type, axis=1)
+    history["Recovery summary"] = history.apply(recovery_summary, axis=1)
     priority_columns = [
         "Hour",
-        "Coverage status",
+        "Recovery type",
+        "Recovery summary",
         "Covered assets",
         "First scored at",
         "Last scored at",
+        "Coverage status",
         "Successful runs",
         "Last successful run",
         "Other runs",
