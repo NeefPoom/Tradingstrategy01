@@ -855,6 +855,9 @@ def page_health(data):
         st.metric("Yahoo quality", quality_status, border=True)
         st.metric("Scheduler log", data.scheduler.get("status", "UNKNOWN"), border=True)
     st.caption("This is one system-level status row. Asset-by-asset freshness remains below for diagnostics only.")
+    st.subheader("Last 3 days successful runs by hour")
+    dataframe_or_empty(data.scheduler_history, "No GitHub Actions run history available.", height=260)
+    st.caption("Grouped by Thailand hour from GitHub Actions. A scheduled hour can show more than one successful run when retries or manual runs happen.")
 
     left, right = st.columns(2)
     with left:

@@ -1,5 +1,6 @@
 from pathlib import Path
 import sys
+from datetime import datetime, timezone
 
 import pandas as pd
 
@@ -14,6 +15,7 @@ from dashboard.data_loader import (
     MR_FAIL_THRESHOLD,
     TF_STATUS,
     US500_STATUS,
+    _scheduler_history_from_runs,
     load_parquet_or_csv,
     load_asset_registry,
     normalize_actions,
@@ -99,6 +101,40 @@ def test_status_and_scheduler_expose_overall_success_times():
     health = scheduler_status({"last_finish": "2026-09-11T01:06:09Z", "exit_code": 0, "status": "SUCCESS"})
     assert status["generated_at"] == "2026-09-11T01:06:09.678922"
     assert health["last_successful_run"] == "2026-09-11T01:06:09Z"
+
+
+def test_scheduler_history_groups_github_runs_by_thailand_hour():
+    runs = [
+        {
+            "updated_at": "2026-09-11T01:06:50Z",
+            "status": "completed",
+            "conclusion": "success",
+            "name": "Update trading dashboard",
+            "head_sha": "abcdef123456",
+        },
+        {
+            "updated_at": "2026-09-11T01:20:00Z",
+            "status": "completed",
+            "conclusion": "failure",
+            "name": "Update trading dashboard",
+            "head_sha": "fedcba654321",
+        },
+        {
+            "updated_at": "2026-09-07T01:00:00Z",
+            "status": "completed",
+            "conclusion": "success",
+            "name": "Old run",
+            "head_sha": "oldold",
+        },
+    ]
+    history = _scheduler_history_from_runs(runs, now=datetime(2026, 9, 11, 2, tzinfo=timezone.utc), hours=72)
+    hour = history[history["Hour"] == "2026-09-11 08:00 ICT"].iloc[0]
+    assert hour["Successful runs"] == 1
+    assert hour["Other runs"] == 1
+    assert hour["Last successful run"] == "2026-09-11 08:06:50 ICT (+07:00)"
+    assert len(history) == 72
+    assert history.iloc[0]["Hour"] == "2026-09-11 09:00 ICT"
+    assert "2026-09-07 08:00 ICT" not in set(history["Hour"])
 
 
 def test_refresh_data_does_not_modify_research_files():
