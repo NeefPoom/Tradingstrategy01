@@ -105,7 +105,7 @@ def load_json(path: Path) -> dict[str, Any]:
         log_event(f"missing file warning: {path}")
         return {}
     try:
-        return json.loads(path.read_text(encoding="utf-8"))
+        return json.loads(path.read_text(encoding="utf-8-sig"))
     except Exception as exc:
         log_event(f"parse error: {path}: {exc}")
         return {}
@@ -201,11 +201,13 @@ def _extract_status_value(text: str, label: str) -> str | None:
 
 def parse_phase_h_status(text: str) -> dict[str, Any]:
     decision = _extract_status_value(text, "## 15. Decision") or "INSUFFICIENT_FORWARD_DATA"
+    generated_match = re.search(r"\*\*Generated:\*\*\s*([^\n]+)", text)
     days_match = re.search(r"## 4\. Days observed\s*\n(\d+)", text)
     mr_match = re.search(r"(\d+)\s+candidates,\s+(\d+)\s+resolved", text)
     runner_match = re.search(r"## 7\. Runner events / resolved\s*\n(\d+)\s+events", text)
     return {
         "decision": decision,
+        "generated_at": generated_match.group(1).strip() if generated_match else "NOT YET AVAILABLE",
         "days_observed": int(days_match.group(1)) if days_match else 0,
         "mr_candidates": int(mr_match.group(1)) if mr_match else 0,
         "mr_resolved": int(mr_match.group(2)) if mr_match else 0,
@@ -250,7 +252,7 @@ def scheduler_status(health: dict[str, Any]) -> dict[str, Any]:
         "exit_code": exit_code if exit_code is not None else "NOT YET AVAILABLE",
         "status": status,
         "duration": health.get("duration") or health.get("duration_seconds") or "NOT YET AVAILABLE",
-        "last_successful_run": health.get("last_successful_run") or health.get("last_success_at") or "NOT YET AVAILABLE",
+        "last_successful_run": health.get("last_successful_run") or health.get("last_success_at") or (health.get("last_finish") if status == "SUCCESS" else None) or "NOT YET AVAILABLE",
         "next_scheduled_run": health.get("next_scheduled_run") or "NOT YET AVAILABLE",
     }
 

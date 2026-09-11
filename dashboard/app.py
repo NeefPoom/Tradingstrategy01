@@ -838,10 +838,40 @@ def page_market_state(data):
 def page_health(data):
     st.title("Data & Scheduler Health")
     freeze = model_freeze_status(data.baseline, data.registry)
+    missing = 0
+    if not data.market_open_completeness.empty and "missing_open_bars" in data.market_open_completeness:
+        missing = int(pd.to_numeric(data.market_open_completeness["missing_open_bars"], errors="coerce").fillna(0).sum())
+    quality_status = "PASS"
+    if data.price_quality.empty or "status" not in data.price_quality:
+        quality_status = "UNKNOWN"
+    elif not data.price_quality["status"].astype(str).str.upper().eq("PASS").all():
+        quality_status = "WARNING"
+
+    st.subheader("Overall successful run")
+    with st.container(horizontal=True):
+        st.metric("Latest report run", format_thailand_timestamp(data.status.get("generated_at")), border=True)
+        st.metric("Latest observation", latest_observation_timestamp(data), border=True)
+        st.metric("Data completeness", "PASS" if missing == 0 else "CHECK", f"{missing} missing", border=True)
+        st.metric("Yahoo quality", quality_status, border=True)
+        st.metric("Scheduler log", data.scheduler.get("status", "UNKNOWN"), border=True)
+    st.caption("This is one system-level status row. Asset-by-asset freshness remains below for diagnostics only.")
+
     left, right = st.columns(2)
     with left:
         st.subheader("Scheduler Health")
-        dataframe_or_empty(pd.DataFrame([data.scheduler]))
+        scheduler = pd.DataFrame(
+            [
+                {
+                    "Last successful run": format_thailand_timestamp(data.scheduler.get("last_successful_run")),
+                    "Last start": format_thailand_timestamp(data.scheduler.get("last_start")),
+                    "Last finish": format_thailand_timestamp(data.scheduler.get("last_finish")),
+                    "Status": data.scheduler.get("status", "UNKNOWN"),
+                    "Exit code": data.scheduler.get("exit_code", "NOT YET AVAILABLE"),
+                    "Duration seconds": data.scheduler.get("duration", "NOT YET AVAILABLE"),
+                }
+            ]
+        )
+        dataframe_or_empty(scheduler)
     with right:
         st.subheader("Model Freeze Health")
         dataframe_or_empty(pd.DataFrame([freeze]))
