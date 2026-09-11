@@ -1,1 +1,6 @@
-
+asset,first_missing_open_bar_utc,last_missing_open_bar_utc,missing_open_bars,recoverable_by_yahoo_730d,calendar
+GOLD,2026-09-11 03:00:00,2026-09-11 03:00:00,1,True,CMEGlobex_GC
+SILVER,2026-09-11 03:00:00,2026-09-11 03:00:00,1,True,CMEGlobex_GC
+WTI,2026-09-11 03:00:00,2026-09-11 03:00:00,1,True,CMEGlobex_Energy
+BRENT,2026-09-11 03:00:00,2026-09-11 03:00:00,1,True,CMEGlobex_Energy
+NATGAS,2026-09-11 03:00:00,2026-09-11 03:00:00,1,True,CMEGlobex_Energy
