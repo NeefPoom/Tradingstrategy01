@@ -16,6 +16,7 @@ from dashboard.data_loader import (
     TF_STATUS,
     US500_STATUS,
     _local_scheduler_runs_from_log,
+    _add_observation_coverage,
     _scheduler_history_from_runs,
     load_parquet_or_csv,
     load_asset_registry,
@@ -150,6 +151,23 @@ def test_local_scheduler_history_parses_completion_log():
     assert success_hour["Last successful run"] == "2026-09-11 09:13:58 ICT (+07:00)"
     assert failed_hour["Other runs"] == 1
     assert failed_hour["Latest status"] == "FAILED"
+
+
+def test_scheduler_history_marks_no_run_hours_backfilled_later():
+    history = _scheduler_history_from_runs([], now=datetime(2026, 9, 11, 4, tzinfo=timezone.utc), hours=4)
+    observations = pd.DataFrame(
+        {
+            "asset": ["GOLD", "USDJPY"],
+            "timestamp": ["2026-09-11 02:00:00", "2026-09-11 02:00:00"],
+            "scored_at": ["2026-09-11T03:05:00Z", "2026-09-11T03:06:00Z"],
+        }
+    )
+    covered = _add_observation_coverage(history, observations, now=datetime(2026, 9, 11, 4, tzinfo=timezone.utc), hours=4)
+    hour = covered[covered["Hour"] == "2026-09-11 09:00 ICT"].iloc[0]
+    assert hour["Successful runs"] == 0
+    assert hour["Covered assets"] == 2
+    assert hour["Coverage status"] == "BACKFILLED LATER"
+    assert hour["First scored at"] == "2026-09-11 10:05:00 ICT (+07:00)"
 
 
 def test_refresh_data_does_not_modify_research_files():

@@ -278,6 +278,10 @@ def _empty_scheduler_history(now: datetime | None = None, hours: int = 72) -> pd
     hourly["Other runs"] = 0
     hourly["Latest status"] = "NO RUN"
     hourly["Duration seconds"] = ""
+    hourly["Covered assets"] = 0
+    hourly["First scored at"] = "n/a"
+    hourly["Last scored at"] = "n/a"
+    hourly["Coverage status"] = "NO LOCAL RUN / NO OBS"
     return hourly
 
 
@@ -332,6 +336,70 @@ def _scheduler_history_from_runs(runs: list[dict[str, Any]], now: datetime | Non
     return history
 
 
+def _observation_coverage_by_hour(observations: pd.DataFrame, now: datetime | None = None, hours: int = 72) -> pd.DataFrame:
+    if observations.empty or not {"asset", "timestamp", "scored_at"}.issubset(observations.columns):
+        return pd.DataFrame(columns=["Hour", "Covered assets", "First scored at", "Last scored at"])
+
+    now = now or datetime.now(timezone.utc)
+    start = pd.Timestamp(now).tz_convert(THAILAND_TZ).floor("h") - pd.Timedelta(hours=hours - 1)
+    frame = observations[["asset", "timestamp", "scored_at"]].copy()
+    frame["timestamp"] = pd.to_datetime(frame["timestamp"], utc=True, errors="coerce")
+    frame["scored_at"] = pd.to_datetime(frame["scored_at"], utc=True, errors="coerce")
+    frame = frame.dropna(subset=["timestamp", "scored_at"])
+    if frame.empty:
+        return pd.DataFrame(columns=["Hour", "Covered assets", "First scored at", "Last scored at"])
+
+    frame["_source_hour"] = frame["timestamp"].dt.tz_convert(THAILAND_TZ).dt.floor("h")
+    frame = frame[frame["_source_hour"] >= start]
+    if frame.empty:
+        return pd.DataFrame(columns=["Hour", "Covered assets", "First scored at", "Last scored at"])
+
+    grouped = (
+        frame.groupby("_source_hour", sort=False)
+        .agg(
+            **{
+                "Covered assets": ("asset", "nunique"),
+                "_first_scored": ("scored_at", "min"),
+                "_last_scored": ("scored_at", "max"),
+            }
+        )
+        .reset_index()
+    )
+    grouped["Hour"] = grouped["_source_hour"].dt.strftime("%Y-%m-%d %H:00 ICT")
+    grouped["First scored at"] = grouped["_first_scored"].apply(format_thailand_timestamp)
+    grouped["Last scored at"] = grouped["_last_scored"].apply(format_thailand_timestamp)
+    return grouped[["Hour", "Covered assets", "First scored at", "Last scored at"]]
+
+
+def _add_observation_coverage(history: pd.DataFrame, observations: pd.DataFrame, now: datetime | None = None, hours: int = 72) -> pd.DataFrame:
+    history = history.drop(columns=["Covered assets", "First scored at", "Last scored at", "Coverage status"], errors="ignore")
+    coverage = _observation_coverage_by_hour(observations, now=now, hours=hours)
+    if coverage.empty:
+        history = history.copy()
+        history["Covered assets"] = 0
+        history["First scored at"] = "n/a"
+        history["Last scored at"] = "n/a"
+    else:
+        history = history.merge(coverage, on="Hour", how="left")
+        history["Covered assets"] = history["Covered assets"].fillna(0).astype(int)
+        history["First scored at"] = history["First scored at"].fillna("n/a")
+        history["Last scored at"] = history["Last scored at"].fillna("n/a")
+
+    def coverage_status(row: pd.Series) -> str:
+        successful = int(row.get("Successful runs", 0) or 0)
+        covered = int(row.get("Covered assets", 0) or 0)
+        if successful > 0 and covered > 0:
+            return "RUN + OBSERVED"
+        if successful > 0:
+            return "RUN ONLY"
+        if covered > 0:
+            return "BACKFILLED LATER"
+        return "NO LOCAL RUN / NO OBS"
+
+    history["Coverage status"] = history.apply(coverage_status, axis=1)
+    return history
+
+
 def _local_scheduler_runs_from_log(log_text: str) -> list[dict[str, Any]]:
     pattern = re.compile(
         r"\[(?P<logged_at>\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2})\]\s+completion:\s+"
@@ -352,23 +420,27 @@ def _local_scheduler_runs_from_log(log_text: str) -> list[dict[str, Any]]:
     return runs
 
 
-def load_scheduler_history(hours: int = 72) -> pd.DataFrame:
+def load_scheduler_history(hours: int = 72, observations: pd.DataFrame | None = None) -> pd.DataFrame:
+    observation_frame = observations if observations is not None else pd.DataFrame()
     try:
         if not SCHEDULER_LOG_FILE.exists():
             health = scheduler_status(load_json(REPORTS / "phase_h_scheduler_health.json"))
             last_finish = health.get("last_finish")
             status = health.get("status")
             if last_finish not in (None, "NOT YET AVAILABLE") and status:
-                return _scheduler_history_from_runs(
+                history = _scheduler_history_from_runs(
                     [{"finished_at": last_finish, "status": status, "duration_seconds": health.get("duration", "")}],
                     hours=hours,
                 )
-            return _empty_scheduler_history(hours=hours)
+            else:
+                history = _empty_scheduler_history(hours=hours)
+            return _add_observation_coverage(history, observation_frame, hours=hours)
         runs = _local_scheduler_runs_from_log(SCHEDULER_LOG_FILE.read_text(encoding="utf-8", errors="replace"))
-        return _scheduler_history_from_runs(runs, hours=hours)
+        history = _scheduler_history_from_runs(runs, hours=hours)
+        return _add_observation_coverage(history, observation_frame, hours=hours)
     except Exception as exc:
         log_event(f"scheduler history warning: {exc}")
-        return _empty_scheduler_history(hours=hours)
+        return _add_observation_coverage(_empty_scheduler_history(hours=hours), observation_frame, hours=hours)
 
 
 def normalize_actions(df: pd.DataFrame) -> pd.DataFrame:
@@ -435,7 +507,7 @@ def load_dashboard_data() -> DashboardData:
         forward_runner_comparison=load_report_csv("forward_runner_comparison.csv"),
         forward_calibration=load_report_csv("mr_fail_forward_calibration.csv"),
         asset_registry=load_asset_registry(),
-        scheduler_history=load_scheduler_history(),
+        scheduler_history=load_scheduler_history(observations=observations),
     )
 
 

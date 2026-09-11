@@ -857,7 +857,7 @@ def page_health(data):
     st.caption("This is one system-level status row. Asset-by-asset freshness remains below for diagnostics only.")
     st.subheader("Local scheduled runs, last 3 days by hour")
     dataframe_or_empty(data.scheduler_history, "No local scheduler run history available.", height=260)
-    st.caption("Grouped by Thailand hour from this computer's scheduler log. NO RUN means the local task did not finish in that hour; the next successful run still checks and backfills missing open-market price bars before scoring.")
+    st.caption("NO RUN means the local task did not finish in that clock hour. BACKFILLED LATER means observations for that source-bar hour were scored later; First/Last scored at shows when the delayed coverage happened.")
 
     left, right = st.columns(2)
     with left:
