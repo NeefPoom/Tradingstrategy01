@@ -397,7 +397,21 @@ def _add_observation_coverage(history: pd.DataFrame, observations: pd.DataFrame,
         return "NO LOCAL RUN / NO OBS"
 
     history["Coverage status"] = history.apply(coverage_status, axis=1)
-    return history
+    priority_columns = [
+        "Hour",
+        "Coverage status",
+        "Covered assets",
+        "First scored at",
+        "Last scored at",
+        "Successful runs",
+        "Last successful run",
+        "Other runs",
+        "Latest status",
+        "Duration seconds",
+    ]
+    ordered_columns = [column for column in priority_columns if column in history.columns]
+    ordered_columns.extend(column for column in history.columns if column not in ordered_columns)
+    return history[ordered_columns]
 
 
 def _local_scheduler_runs_from_log(log_text: str) -> list[dict[str, Any]]:
