@@ -58,9 +58,9 @@ $settings = New-ScheduledTaskSettingsSet `
     -StartWhenAvailable `
     -WakeToRun `
     -MultipleInstances IgnoreNew `
-    -ExecutionTimeLimit (New-TimeSpan -Minutes 30) `
-    -RestartCount 2 `
-    -RestartInterval (New-TimeSpan -Minutes 5) `
+    -ExecutionTimeLimit (New-TimeSpan -Minutes 55) `
+    -RestartCount 3 `
+    -RestartInterval (New-TimeSpan -Minutes 10) `
     -AllowStartIfOnBatteries `
     -DontStopIfGoingOnBatteries
 $principal = New-ScheduledTaskPrincipal -UserId "$env:USERDOMAIN\$env:USERNAME" -LogonType Interactive -RunLevel Limited
