@@ -8,7 +8,6 @@ from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any
-from urllib.request import Request, urlopen
 from zoneinfo import ZoneInfo
 
 import pandas as pd
@@ -20,7 +19,7 @@ REPORTS = ROOT / "reports"
 DATA = ROOT / "data"
 LOG_DIR = ROOT / "logs"
 LOG_FILE = LOG_DIR / "dashboard.log"
-GITHUB_ACTIONS_RUNS_URL = "https://api.github.com/repos/NeefPoom/Tradingstrategy01/actions/runs?branch=main&per_page=100"
+SCHEDULER_LOG_FILE = LOG_DIR / "phase_h_scheduler.log"
 
 
 def _configured_asset_names() -> list[str]:
@@ -259,11 +258,10 @@ def scheduler_status(health: dict[str, Any]) -> dict[str, Any]:
     }
 
 
-def _scheduler_history_from_runs(runs: list[dict[str, Any]], now: datetime | None = None, hours: int = 72) -> pd.DataFrame:
+def _hourly_scheduler_frame(now: datetime | None = None, hours: int = 72) -> pd.DataFrame:
     now = now or datetime.now(timezone.utc)
-    start = now - timedelta(hours=hours)
     end_hour = pd.Timestamp(now).tz_convert(THAILAND_TZ).floor("h")
-    hourly = pd.DataFrame(
+    return pd.DataFrame(
         {
             "Hour": [
                 ts.strftime("%Y-%m-%d %H:00 ICT")
@@ -271,33 +269,42 @@ def _scheduler_history_from_runs(runs: list[dict[str, Any]], now: datetime | Non
             ]
         }
     )
+
+
+def _empty_scheduler_history(now: datetime | None = None, hours: int = 72) -> pd.DataFrame:
+    hourly = _hourly_scheduler_frame(now, hours)
+    hourly["Successful runs"] = 0
+    hourly["Last successful run"] = "n/a"
+    hourly["Other runs"] = 0
+    hourly["Latest status"] = "NO RUN"
+    hourly["Duration seconds"] = ""
+    return hourly
+
+
+def _scheduler_history_from_runs(runs: list[dict[str, Any]], now: datetime | None = None, hours: int = 72) -> pd.DataFrame:
+    now = now or datetime.now(timezone.utc)
+    start = now - timedelta(hours=hours)
+    hourly = _hourly_scheduler_frame(now, hours)
     rows = []
     for run in runs:
-        finished = pd.to_datetime(run.get("updated_at") or run.get("created_at"), utc=True, errors="coerce")
+        finished = pd.to_datetime(run.get("finished_at") or run.get("updated_at") or run.get("created_at"), utc=True, errors="coerce")
         if pd.isna(finished) or finished.to_pydatetime() < start:
             continue
-        status = str(run.get("status") or "").lower()
-        conclusion = str(run.get("conclusion") or "").lower()
-        display_status = "SUCCESS" if status == "completed" and conclusion == "success" else (conclusion or status or "unknown").upper()
+        status = str(run.get("status") or run.get("conclusion") or "unknown").upper()
+        if str(run.get("conclusion") or "").lower() == "success":
+            status = "SUCCESS"
+        duration = run.get("duration_seconds", "")
         rows.append(
             {
                 "_finished": finished,
-                "_successful_finished": finished if display_status == "SUCCESS" else pd.NaT,
-                "Run finished": format_thailand_timestamp(finished),
+                "_successful_finished": finished if status == "SUCCESS" else pd.NaT,
                 "Hour": finished.tz_convert(THAILAND_TZ).floor("h").strftime("%Y-%m-%d %H:00 ICT"),
-                "Status": display_status,
-                "Workflow": run.get("name", "Update trading dashboard"),
-                "Commit": str(run.get("head_sha", ""))[:7],
-                "URL": run.get("html_url", ""),
+                "Status": status,
+                "Duration seconds": duration,
             }
         )
     if not rows:
-        hourly["Successful runs"] = 0
-        hourly["Last successful run"] = "n/a"
-        hourly["Other runs"] = 0
-        hourly["Latest status"] = "NO RUN"
-        hourly["Latest commit"] = ""
-        return hourly
+        return _empty_scheduler_history(now, hours)
 
     frame = pd.DataFrame(rows).sort_values("_finished", ascending=False)
     grouped = (
@@ -311,7 +318,7 @@ def _scheduler_history_from_runs(runs: list[dict[str, Any]], now: datetime | Non
                 ),
                 "Other runs": ("Status", lambda s: int((s != "SUCCESS").sum())),
                 "Latest status": ("Status", "first"),
-                "Latest commit": ("Commit", "first"),
+                "Duration seconds": ("Duration seconds", "first"),
             }
         )
         .reset_index()
@@ -321,19 +328,47 @@ def _scheduler_history_from_runs(runs: list[dict[str, Any]], now: datetime | Non
     history["Last successful run"] = history["Last successful run"].fillna("n/a")
     history["Other runs"] = history["Other runs"].fillna(0).astype(int)
     history["Latest status"] = history["Latest status"].fillna("NO RUN")
-    history["Latest commit"] = history["Latest commit"].fillna("")
+    history["Duration seconds"] = history["Duration seconds"].fillna("")
     return history
+
+
+def _local_scheduler_runs_from_log(log_text: str) -> list[dict[str, Any]]:
+    pattern = re.compile(
+        r"\[(?P<logged_at>\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2})\]\s+completion:\s+"
+        r"(?P<finished_at>\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2})\s+"
+        r"exit_code=(?P<exit_code>-?\d+)\s+status=(?P<status>[A-Z_]+)\s+duration=(?P<duration>[0-9.]+)s"
+    )
+    runs = []
+    for match in pattern.finditer(log_text):
+        finished = pd.Timestamp(match.group("finished_at"), tz=THAILAND_TZ)
+        runs.append(
+            {
+                "finished_at": finished.isoformat(),
+                "status": match.group("status"),
+                "exit_code": int(match.group("exit_code")),
+                "duration_seconds": float(match.group("duration")),
+            }
+        )
+    return runs
 
 
 def load_scheduler_history(hours: int = 72) -> pd.DataFrame:
     try:
-        request = Request(GITHUB_ACTIONS_RUNS_URL, headers={"User-Agent": "Hybrid-MR-TF-dashboard"})
-        with urlopen(request, timeout=8) as response:
-            payload = json.loads(response.read().decode("utf-8"))
-        return _scheduler_history_from_runs(payload.get("workflow_runs", []), hours=hours)
+        if not SCHEDULER_LOG_FILE.exists():
+            health = scheduler_status(load_json(REPORTS / "phase_h_scheduler_health.json"))
+            last_finish = health.get("last_finish")
+            status = health.get("status")
+            if last_finish not in (None, "NOT YET AVAILABLE") and status:
+                return _scheduler_history_from_runs(
+                    [{"finished_at": last_finish, "status": status, "duration_seconds": health.get("duration", "")}],
+                    hours=hours,
+                )
+            return _empty_scheduler_history(hours=hours)
+        runs = _local_scheduler_runs_from_log(SCHEDULER_LOG_FILE.read_text(encoding="utf-8", errors="replace"))
+        return _scheduler_history_from_runs(runs, hours=hours)
     except Exception as exc:
-        log_event(f"scheduler history API warning: {exc}")
-        return pd.DataFrame(columns=["Hour", "Successful runs", "Last successful run", "Other runs", "Latest status", "Latest commit"])
+        log_event(f"scheduler history warning: {exc}")
+        return _empty_scheduler_history(hours=hours)
 
 
 def normalize_actions(df: pd.DataFrame) -> pd.DataFrame:

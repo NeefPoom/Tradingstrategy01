@@ -15,6 +15,7 @@ from dashboard.data_loader import (
     MR_FAIL_THRESHOLD,
     TF_STATUS,
     US500_STATUS,
+    _local_scheduler_runs_from_log,
     _scheduler_history_from_runs,
     load_parquet_or_csv,
     load_asset_registry,
@@ -103,7 +104,7 @@ def test_status_and_scheduler_expose_overall_success_times():
     assert health["last_successful_run"] == "2026-09-11T01:06:09Z"
 
 
-def test_scheduler_history_groups_github_runs_by_thailand_hour():
+def test_scheduler_history_groups_runs_by_thailand_hour():
     runs = [
         {
             "updated_at": "2026-09-11T01:06:50Z",
@@ -135,6 +136,20 @@ def test_scheduler_history_groups_github_runs_by_thailand_hour():
     assert len(history) == 72
     assert history.iloc[0]["Hour"] == "2026-09-11 09:00 ICT"
     assert "2026-09-07 08:00 ICT" not in set(history["Hour"])
+
+
+def test_local_scheduler_history_parses_completion_log():
+    runs = _local_scheduler_runs_from_log(
+        "[2026-09-11 09:13:58] completion: 2026-09-11 09:13:58 exit_code=0 status=SUCCESS duration=534.8s\n"
+        "[2026-09-11 10:05:12] completion: 2026-09-11 10:05:12 exit_code=1 status=FAILED duration=12.2s\n"
+    )
+    history = _scheduler_history_from_runs(runs, now=datetime(2026, 9, 11, 4, tzinfo=timezone.utc), hours=4)
+    success_hour = history[history["Hour"] == "2026-09-11 09:00 ICT"].iloc[0]
+    failed_hour = history[history["Hour"] == "2026-09-11 10:00 ICT"].iloc[0]
+    assert success_hour["Successful runs"] == 1
+    assert success_hour["Last successful run"] == "2026-09-11 09:13:58 ICT (+07:00)"
+    assert failed_hour["Other runs"] == 1
+    assert failed_hour["Latest status"] == "FAILED"
 
 
 def test_refresh_data_does_not_modify_research_files():
