@@ -15,6 +15,7 @@ sys.path.insert(0, str(ROOT / "scripts"))
 
 from hybrid_ml.mr_policy import evaluate_mr, detect_mr_setup, RESEARCH_ONLY_ASSETS
 from hybrid_ml.bar_control import completed_bars, get_latest_completed_bar, observation_id
+from hybrid_ml import forward_mr
 from hybrid_ml.forward_store import append_observation, load_observations, empty_outcomes
 from hybrid_ml.freeze import verify_freeze, file_sha256, FROZEN_MODELS, MODELS_DIR
 from hybrid_ml.data.yahoo_provider import update_asset_prices
@@ -169,3 +170,32 @@ def test_stale_blocks_mr():
     res = evaluate_mr("GOLD", row, {}, {}, "STALE_DATA")
     assert res["decision"] == "MR_BLOCK"
     assert res["reason"] == "BLOCK_DATA_STALE"
+
+
+def test_forward_mr_candidate_store_normalizes_timestamp_objects(monkeypatch, tmp_path):
+    monkeypatch.setattr(forward_mr, "FWD_DIR", tmp_path)
+    monkeypatch.setattr(forward_mr, "MR_CAND_PARQUET", tmp_path / "mr_candidates.parquet")
+    monkeypatch.setattr(forward_mr, "MR_CAND_CSV", tmp_path / "mr_candidates.csv")
+
+    first = {
+        "candidate_id": "GOLD_2026-09-01T00:00:00",
+        "asset": "GOLD",
+        "timestamp": "2026-09-01 00:00:00",
+        "direction": "LONG",
+        "entry_price": 100.0,
+        "resolved_at": None,
+    }
+    second = {
+        "candidate_id": "DOTUSD_2026-09-01T01:00:00",
+        "asset": "DOTUSD",
+        "timestamp": pd.Timestamp("2026-09-01 01:00:00"),
+        "direction": "SHORT",
+        "entry_price": 5.0,
+        "resolved_at": pd.NaT,
+    }
+
+    assert forward_mr.append_mr_candidate(first) == "APPENDED"
+    assert forward_mr.append_mr_candidate(second) == "APPENDED"
+    out = pd.read_parquet(forward_mr.MR_CAND_PARQUET)
+
+    assert out["timestamp"].map(type).eq(str).all()

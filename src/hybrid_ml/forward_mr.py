@@ -37,6 +37,15 @@ RUNNER_EVENT_COLS = [
 ]
 
 
+def _normalize_datetime_columns(df: pd.DataFrame, columns: list[str]) -> pd.DataFrame:
+    frame = df.copy()
+    for column in columns:
+        if column in frame.columns:
+            values = pd.to_datetime(frame[column], errors="coerce", utc=True).dt.tz_convert(None).astype(str)
+            frame[column] = values.mask(values.isin(["NaT", "None", "nan"]), None)
+    return frame
+
+
 def load_mr_candidates() -> "pd.DataFrame":
     if MR_CAND_PARQUET.exists():
         return pd.read_parquet(MR_CAND_PARQUET)
@@ -54,6 +63,7 @@ def append_mr_candidate(row: dict) -> str:
         print(f"SKIP — already scored: {cid}")
         return "SKIP"
     df = pd.concat([existing, pd.DataFrame([row])], ignore_index=True) if len(existing) else pd.DataFrame([row])
+    df = _normalize_datetime_columns(df, ["timestamp", "resolved_at"])
     df.to_parquet(MR_CAND_PARQUET, index=False)
     df.to_csv(MR_CAND_CSV, index=False)
     return "APPENDED"
@@ -76,6 +86,7 @@ def append_runner_event(row: dict) -> str:
         print(f"SKIP — already scored: {rid}")
         return "SKIP"
     df = pd.concat([existing, pd.DataFrame([row])], ignore_index=True) if len(existing) else pd.DataFrame([row])
+    df = _normalize_datetime_columns(df, ["runner_start_time", "osc_exit_time", "hybrid_exit_time", "resolved_at"])
     df.to_parquet(RUNNER_PARQUET, index=False)
     df.to_csv(RUNNER_CSV, index=False)
     return "APPENDED"
