@@ -195,6 +195,29 @@ def test_no_forbidden_actions_in_current_state_table():
     assert "TF_ENTRY" not in set(out["Action"])
 
 
+def test_strategy_fit_table_handles_duplicate_completeness_rows():
+    trades = pd.DataFrame(
+        {
+            "timestamp": ["2026-09-01 00:00:00"],
+            "asset": ["GOLD"],
+            "sim_return_pct": [1.2],
+            "outcome": ["Win"],
+        }
+    )
+    registry = pd.DataFrame({"asset": ["GOLD"], "asset_class": ["Metal"], "selection_enabled": [True]})
+    completeness = pd.DataFrame(
+        {
+            "asset": ["GOLD", "GOLD", "<<<<<<< Updated upstream"],
+            "missing_open_bars": [4, 0, None],
+            "last_timestamp_utc": ["2026-09-01 00:00:00", "2026-09-02 00:00:00", None],
+        }
+    )
+
+    out = strategy_fit_table(trades, registry, completeness)
+
+    assert out[out["Asset"] == "GOLD"].iloc[0]["Data"] == "Complete"
+
+
 def test_yahoo_warning_explains_assets():
     df = pd.DataFrame(
         {

@@ -486,7 +486,18 @@ def _asset_registry_lookup(asset_registry: pd.DataFrame) -> dict[str, dict[str, 
 def _completeness_lookup(completeness: pd.DataFrame) -> dict[str, dict[str, Any]]:
     if completeness.empty or "asset" not in completeness:
         return {}
-    return completeness.set_index("asset").to_dict(orient="index")
+    frame = completeness.copy()
+    frame["asset"] = frame["asset"].astype(str)
+    frame = frame[~frame["asset"].str.startswith(("<<<<<<<", "=======", ">>>>>>>"))]
+    if frame.empty:
+        return {}
+    sort_columns = [column for column in ["report_start_timestamp_utc", "last_timestamp_utc"] if column in frame]
+    if sort_columns:
+        for column in sort_columns:
+            frame[column] = pd.to_datetime(frame[column], errors="coerce")
+        frame = frame.sort_values(sort_columns)
+    frame = frame.drop_duplicates(subset=["asset"], keep="last")
+    return frame.set_index("asset").to_dict(orient="index")
 
 
 def strategy_fit_table(

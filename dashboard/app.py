@@ -612,7 +612,12 @@ def page_asset_selection_lab(data):
         st.warning("Common forward window is not usable yet. Showing available resolved samples for now.", icon=":material/warning:")
 
     asset_count = max(1, int(filtered["asset"].nunique()) if not filtered.empty and "asset" in filtered else 1)
-    top_n = st.slider("Portfolio size", min_value=1, max_value=max(1, min(12, asset_count)), value=min(5, asset_count))
+    max_portfolio_size = max(1, min(12, asset_count))
+    if max_portfolio_size > 1:
+        top_n = st.slider("Portfolio size", min_value=1, max_value=max_portfolio_size, value=min(5, max_portfolio_size))
+    else:
+        top_n = 1
+        st.caption("Portfolio size fixed at 1 because the current filters have fewer than 2 assets with resolved simulation trades.")
 
     fit = strategy_fit_table(filtered, registry, data.market_open_completeness)
     portfolios, curves = portfolio_candidate_sets(filtered, fit, top_n=top_n, max_avg_corr=max_corr)
