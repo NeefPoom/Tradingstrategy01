@@ -407,6 +407,35 @@ def page_trade_simulation(data):
     st.title("Trade Simulation")
     st.caption("Forward research simulation only. These are not broker orders and not realized account P&L.")
     trades = simulation_trade_frame(data.mr_candidates, data.observations)
+    latest_obs_ts = "n/a"
+    latest_candidate_ts = "n/a"
+    latest_trade_ts = "n/a"
+    hours_since_candidate = None
+    if not data.observations.empty and "timestamp" in data.observations:
+        latest_obs = pd.to_datetime(data.observations["timestamp"], errors="coerce").max()
+        latest_obs_ts = latest_obs.strftime("%Y-%m-%d %H:%M UTC") if pd.notna(latest_obs) else "n/a"
+    if not data.mr_candidates.empty and "timestamp" in data.mr_candidates:
+        latest_candidate = pd.to_datetime(data.mr_candidates["timestamp"], errors="coerce").max()
+        latest_candidate_ts = latest_candidate.strftime("%Y-%m-%d %H:%M UTC") if pd.notna(latest_candidate) else "n/a"
+        if pd.notna(latest_candidate) and latest_obs_ts != "n/a":
+            latest_obs = pd.to_datetime(data.observations["timestamp"], errors="coerce").max()
+            hours_since_candidate = (latest_obs - latest_candidate).total_seconds() / 3600
+    if not trades.empty and "timestamp" in trades:
+        latest_trade = pd.to_datetime(trades["timestamp"], errors="coerce").max()
+        latest_trade_ts = latest_trade.strftime("%Y-%m-%d %H:%M UTC") if pd.notna(latest_trade) else "n/a"
+
+    with st.container(horizontal=True):
+        st.metric("Latest observation bar", latest_obs_ts, border=True)
+        st.metric("Latest MR candidate", latest_candidate_ts, border=True)
+        st.metric("Latest simulation trade", latest_trade_ts, border=True)
+        st.metric("Resolved simulation trades", len(trades), border=True)
+
+    if hours_since_candidate is not None and hours_since_candidate >= 24:
+        st.warning(
+            f"Prices and observations are updating, but no new MR setup has been detected for {hours_since_candidate:.0f} hours. "
+            "Trade Simulation only changes when a new MR candidate appears and its 24h forward return is available.",
+            icon=":material/info:",
+        )
 
     if trades.empty:
         st.info("No resolved MR setup simulations yet. The page will populate after candidates have 24h forward returns.", icon=":material/pending:")
