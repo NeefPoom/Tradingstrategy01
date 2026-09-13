@@ -756,6 +756,66 @@ def _portfolio_row(trades: pd.DataFrame, name: str, assets: list[str]) -> dict[s
     }
 
 
+def portfolio_research_summary(trades: pd.DataFrame, assets: list[str], label: str = "Selected portfolio") -> dict[str, Any]:
+    """Summarize equal-weight portfolio evidence from resolved forward trade returns."""
+    equity = portfolio_equity_frame(trades, assets, label)
+    selected_trades = trades[trades["asset"].isin(assets)].copy() if not trades.empty and assets and "asset" in trades else pd.DataFrame()
+    returns = equity["portfolio_return_pct"] if not equity.empty else pd.Series(dtype=float)
+    pf = profit_factor(returns)
+    corr = strategy_return_correlation(selected_trades)
+    if corr.empty or corr.shape[1] < 2:
+        avg_abs_corr = None
+    else:
+        mask = ~np.eye(len(corr), dtype=bool)
+        avg_abs_corr = float(np.nanmean(np.abs(corr.to_numpy()[mask])))
+    return {
+        "label": label,
+        "asset_count": len(assets),
+        "orders": int(len(selected_trades)),
+        "periods": int(len(returns)),
+        "expected_return_pct": float(returns.mean()) if len(returns) else None,
+        "expected_drawdown_pct": max_drawdown(returns),
+        "profit_factor": pf,
+        "win_rate": win_rate(returns),
+        "net_return_pct": float(returns.sum()) if len(returns) else 0.0,
+        "avg_abs_corr": avg_abs_corr,
+        "equity": equity,
+    }
+
+
+def portfolio_asset_contribution_table(trades: pd.DataFrame, assets: list[str]) -> pd.DataFrame:
+    columns = ["Asset", "Orders", "Wins", "Losses", "PF", "Win rate", "Net return", "Max DD", "Avg return", "Contribution"]
+    if trades.empty or not assets or not {"asset", "sim_return_pct"}.issubset(trades.columns):
+        return pd.DataFrame(columns=columns)
+    frame = trades[trades["asset"].isin(assets)].copy()
+    frame["sim_return_pct"] = pd.to_numeric(frame["sim_return_pct"], errors="coerce")
+    frame = frame.dropna(subset=["asset", "sim_return_pct"])
+    if frame.empty:
+        return pd.DataFrame(columns=columns)
+    total_net = float(frame["sim_return_pct"].sum())
+    rows = []
+    for asset, asset_trades in frame.groupby("asset", dropna=False):
+        stats = performance_summary(asset_trades, str(asset))
+        returns = pd.to_numeric(asset_trades["sim_return_pct"], errors="coerce").dropna()
+        net = float(returns.sum()) if len(returns) else 0.0
+        contribution = net / total_net if total_net else 0.0
+        rows.append(
+            {
+                "Asset": asset,
+                "Orders": stats["orders"],
+                "Wins": int((returns > 0).sum()),
+                "Losses": int((returns < 0).sum()),
+                "PF": "inf" if stats["profit_factor"] == math.inf else num(stats["profit_factor"], 2),
+                "Win rate": pct(stats["win_rate"]),
+                "Net return": pct(net / 100),
+                "Max DD": pct((stats["max_drawdown"] or 0) / 100),
+                "Avg return": pct((stats["avg_return"] or 0) / 100),
+                "Contribution": pct(contribution),
+            }
+        )
+    return pd.DataFrame(rows).sort_values("Net return", ascending=False).reset_index(drop=True)[columns]
+
+
 def portfolio_candidate_sets(
     trades: pd.DataFrame,
     fit: pd.DataFrame,

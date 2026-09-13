@@ -187,6 +187,154 @@ def portfolio_equity_curve(df: pd.DataFrame) -> go.Figure:
     return fig
 
 
+def selected_portfolio_equity(equity: pd.DataFrame, title: str = "Selected portfolio P/L") -> go.Figure:
+    if equity.empty or not {"timestamp", "equity_pct", "portfolio_return_pct"}.issubset(equity.columns):
+        return empty_figure("WAITING FOR SELECTED PORTFOLIO TRADES")
+    frame = equity.copy()
+    frame["timestamp"] = pd.to_datetime(frame["timestamp"], errors="coerce")
+    frame["equity_pct"] = pd.to_numeric(frame["equity_pct"], errors="coerce")
+    frame["portfolio_return_pct"] = pd.to_numeric(frame["portfolio_return_pct"], errors="coerce")
+    frame = frame.dropna(subset=["timestamp", "equity_pct"]).sort_values("timestamp")
+    if frame.empty:
+        return empty_figure("WAITING FOR SELECTED PORTFOLIO TRADES")
+    colors = ["#22c55e" if value >= 0 else "#ef4444" for value in frame["portfolio_return_pct"]]
+    fig = go.Figure()
+    fig.add_trace(
+        go.Bar(
+            x=frame["timestamp"],
+            y=frame["portfolio_return_pct"],
+            marker_color=colors,
+            name="Period P/L",
+            opacity=0.45,
+            yaxis="y2",
+        )
+    )
+    fig.add_trace(
+        go.Scatter(
+            x=frame["timestamp"],
+            y=frame["equity_pct"],
+            mode="lines+markers",
+            name="Cumulative P/L",
+            line=dict(color="#60a5fa", width=3),
+        )
+    )
+    fig.update_layout(
+        template="plotly_dark",
+        height=380,
+        margin=dict(l=20, r=20, t=35, b=20),
+        title=title,
+        yaxis_title="Cumulative return %",
+        yaxis2=dict(title="Period return %", overlaying="y", side="right", showgrid=False),
+        xaxis_title="Time",
+        legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="left", x=0),
+    )
+    return fig
+
+
+def portfolio_contribution_bar(df: pd.DataFrame) -> go.Figure:
+    if df.empty or not {"Asset", "Net return"}.issubset(df.columns):
+        return empty_figure("WAITING FOR ASSET CONTRIBUTION")
+    frame = df.copy()
+    frame["net_return_pct"] = pd.to_numeric(frame["Net return"].astype(str).str.rstrip("%"), errors="coerce")
+    frame = frame.dropna(subset=["net_return_pct"]).sort_values("net_return_pct", ascending=True)
+    if frame.empty:
+        return empty_figure("WAITING FOR ASSET CONTRIBUTION")
+    fig = px.bar(
+        frame,
+        x="net_return_pct",
+        y="Asset",
+        orientation="h",
+        color="net_return_pct",
+        text="Net return",
+        color_continuous_scale="RdYlGn",
+    )
+    fig.update_layout(
+        template="plotly_dark",
+        height=max(280, min(560, 36 * len(frame) + 100)),
+        margin=dict(l=20, r=20, t=35, b=20),
+        title="Contribution by selected asset",
+        xaxis_title="Net return %",
+        yaxis_title="Asset",
+        coloraxis_showscale=False,
+    )
+    return fig
+
+
+def standardized_price_portfolio(prices: pd.DataFrame, trades: pd.DataFrame | None = None) -> go.Figure:
+    if prices.empty or not {"timestamp", "asset", "standardized_close"}.issubset(prices.columns):
+        return empty_figure("WAITING FOR STANDARDIZED PRICE HISTORY")
+    frame = prices.copy()
+    frame["timestamp"] = pd.to_datetime(frame["timestamp"], errors="coerce")
+    frame["standardized_close"] = pd.to_numeric(frame["standardized_close"], errors="coerce")
+    frame = frame.dropna(subset=["timestamp", "asset", "standardized_close"]).sort_values(["asset", "timestamp"])
+    if frame.empty:
+        return empty_figure("WAITING FOR STANDARDIZED PRICE HISTORY")
+    fig = px.line(
+        frame,
+        x="timestamp",
+        y="standardized_close",
+        color="asset",
+        title="Standardized price paths with strategy signals",
+    )
+    portfolio = frame.groupby("timestamp", as_index=False)["standardized_close"].mean()
+    fig.add_trace(
+        go.Scatter(
+            x=portfolio["timestamp"],
+            y=portfolio["standardized_close"],
+            mode="lines",
+            name="Equal-weight price blend",
+            line=dict(color="#f8fafc", width=4),
+        )
+    )
+    if trades is not None and not trades.empty and {"timestamp", "asset", "direction"}.issubset(trades.columns):
+        signal_frame = trades.copy()
+        signal_frame["timestamp"] = pd.to_datetime(signal_frame["timestamp"], errors="coerce")
+        signal_frame = signal_frame.dropna(subset=["timestamp", "asset"])
+        signal_rows = []
+        for asset, group in signal_frame.groupby("asset", dropna=False):
+            asset_prices = frame[frame["asset"].eq(asset)][["timestamp", "standardized_close"]].sort_values("timestamp")
+            if asset_prices.empty:
+                continue
+            aligned = pd.merge_asof(
+                group.sort_values("timestamp"),
+                asset_prices,
+                on="timestamp",
+                direction="nearest",
+                tolerance=pd.Timedelta("3h"),
+            ).dropna(subset=["standardized_close"])
+            if not aligned.empty:
+                signal_rows.append(aligned)
+        if signal_rows:
+            markers = pd.concat(signal_rows, ignore_index=True)
+            markers["Direction"] = markers["direction"].astype(str).str.upper()
+            markers["Signal"] = markers.get("trade_bucket", markers.get("decision", "")).astype(str)
+            symbol_map = {"LONG": "triangle-up", "SHORT": "triangle-down"}
+            color_map = {"Gate allowed": "#22c55e", "Gate blocked": "#ef4444", "Research only": "#f59e0b"}
+            for direction, direction_rows in markers.groupby("Direction", dropna=False):
+                colors = direction_rows["Signal"].map(color_map).fillna("#e5e7eb")
+                fig.add_trace(
+                    go.Scatter(
+                        x=direction_rows["timestamp"],
+                        y=direction_rows["standardized_close"],
+                        mode="markers",
+                        name=f"{direction} signal",
+                        marker=dict(size=12, symbol=symbol_map.get(str(direction), "circle"), color=colors, line=dict(width=1, color="#020617")),
+                        text=direction_rows["asset"],
+                        customdata=direction_rows[["Signal"]].to_numpy(),
+                        hovertemplate="%{text}<br>%{x}<br>%{customdata[0]}<br>Standardized=%{y:.2f}<extra></extra>",
+                    )
+                )
+    fig.update_layout(
+        template="plotly_dark",
+        height=460,
+        margin=dict(l=20, r=20, t=35, b=20),
+        yaxis_title="Standardized close (first visible bar = 100)",
+        xaxis_title="Time",
+        legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="left", x=0),
+    )
+    return fig
+
+
 def strategy_fit_score_bar(df: pd.DataFrame) -> go.Figure:
     if df.empty or not {"Asset", "Score"}.issubset(df.columns):
         return empty_figure("WAITING FOR ASSET SCORES")

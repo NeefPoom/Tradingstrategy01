@@ -30,7 +30,9 @@ from dashboard.metrics import (
     asset_selection_score_table,
     common_forward_window,
     performance_summary,
+    portfolio_asset_contribution_table,
     portfolio_candidate_sets,
+    portfolio_research_summary,
     simulation_trade_frame,
     strategy_fit_table,
     strategy_return_correlation,
@@ -300,6 +302,24 @@ def test_strategy_fit_and_portfolio_candidates_rank_assets():
     portfolios, curves = portfolio_candidate_sets(trades, fit, top_n=2, max_avg_corr=0.7)
     assert {"Top score", "Low correlation", "Class balanced", "All usable"}.issubset(set(portfolios["Portfolio"]))
     assert not curves.empty
+
+
+def test_portfolio_research_summary_and_contribution_table():
+    trades = pd.DataFrame(
+        {
+            "asset": ["GOLD", "GOLD", "BTCUSD", "BTCUSD"],
+            "timestamp": pd.date_range("2026-09-01", periods=4, freq="h"),
+            "sim_return_pct": [1.0, -0.4, 0.6, 0.8],
+        }
+    )
+    summary = portfolio_research_summary(trades, ["GOLD", "BTCUSD"])
+    contribution = portfolio_asset_contribution_table(trades, ["GOLD", "BTCUSD"])
+
+    assert summary["asset_count"] == 2
+    assert summary["orders"] == 4
+    assert summary["periods"] == 4
+    assert summary["net_return_pct"] > 0
+    assert set(contribution["Asset"]) == {"GOLD", "BTCUSD"}
 
 
 def test_common_forward_window_uses_shared_asset_span():

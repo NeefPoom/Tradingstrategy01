@@ -46,10 +46,12 @@ from dashboard.metrics import (
     performance_table,
     pct,
     portfolio_candidate_sets,
+    portfolio_asset_contribution_table,
     runner_sample_label,
     sample_label,
     simulation_trade_frame,
     common_forward_window,
+    portfolio_research_summary,
     return_diagnostics,
     strategy_fit_table,
     strategy_health_status,
@@ -403,6 +405,37 @@ def _metric_value(value, kind: str = "number") -> str:
     return num(value, 2)
 
 
+@st.cache_data(show_spinner=False)
+def load_standardized_price_history(assets: tuple[str, ...], lookback_days: int) -> pd.DataFrame:
+    frames = []
+    for asset in assets:
+        path = ROOT / "data" / "prices" / f"{asset}_1h_yahoo.csv"
+        if not path.exists():
+            continue
+        frame = pd.read_csv(path)
+        required = {"timestamp", "close"}
+        if not required.issubset(frame.columns):
+            continue
+        frame = frame[["timestamp", "close"]].copy()
+        frame["timestamp"] = pd.to_datetime(frame["timestamp"], errors="coerce")
+        frame["close"] = pd.to_numeric(frame["close"], errors="coerce")
+        frame = frame.dropna(subset=["timestamp", "close"]).sort_values("timestamp")
+        if lookback_days > 0 and not frame.empty:
+            cutoff = frame["timestamp"].max() - pd.Timedelta(days=int(lookback_days))
+            frame = frame[frame["timestamp"] >= cutoff]
+        if frame.empty:
+            continue
+        first = float(frame["close"].iloc[0])
+        if first == 0:
+            continue
+        frame["asset"] = asset
+        frame["standardized_close"] = frame["close"] / first * 100.0
+        frames.append(frame[["timestamp", "asset", "close", "standardized_close"]])
+    if not frames:
+        return pd.DataFrame(columns=["timestamp", "asset", "close", "standardized_close"])
+    return pd.concat(frames, ignore_index=True)
+
+
 def page_trade_simulation(data):
     st.title("Trade Simulation")
     st.caption("Forward research simulation only. These are not broker orders and not realized account P&L.")
@@ -569,7 +602,7 @@ def page_trade_simulation(data):
 
 def page_asset_selection_lab(data):
     st.title("Asset Selection Lab")
-    st.caption("Research-only portfolio selection from forward simulation results. Use this to shortlist assets before any live decision.")
+    st.caption("Research-only portfolio construction from forward simulation results. Use this to shortlist assets, study diversification, and inspect how a selected portfolio behaves.")
     trades = simulation_trade_frame(data.mr_candidates, data.observations)
     if trades.empty:
         st.info("No resolved simulation trades yet. Asset selection will become meaningful after enough forward outcomes.", icon=":material/pending:")
@@ -584,24 +617,25 @@ def page_asset_selection_lab(data):
     classes = sorted(registry["asset_class"].dropna().unique().tolist()) if not registry.empty and "asset_class" in registry else []
     selected_classes = st.pills("Asset classes", classes, selection_mode="multi", default=classes) if classes else []
     selected_bucket = st.segmented_control("Trade set", ["All", "Gate allowed", "Gate blocked", "Research only"], default="All")
-    timeline_mode = st.segmented_control("Comparison window", ["Common forward window", "All resolved samples"], default="Common forward window")
+    timeline_mode = st.segmented_control("Comparison window", ["All resolved samples", "Common forward window"], default="All resolved samples")
     max_corr = st.slider("Max average correlation for low-correlation set", min_value=0.0, max_value=1.0, value=0.65, step=0.05)
 
-    filtered = trades.copy()
+    filtered_all_resolved = trades.copy()
     window_source = data.observations.copy()
     if not registry.empty and "asset" in registry:
         registry_assets = registry["asset"].tolist()
-        filtered = filtered[filtered["asset"].isin(registry_assets)]
+        filtered_all_resolved = filtered_all_resolved[filtered_all_resolved["asset"].isin(registry_assets)]
         if not window_source.empty and "asset" in window_source:
             window_source = window_source[window_source["asset"].isin(registry_assets)]
     if selected_bucket != "All":
-        filtered = filtered[filtered["trade_bucket"] == selected_bucket]
+        filtered_all_resolved = filtered_all_resolved[filtered_all_resolved["trade_bucket"] == selected_bucket]
     if selected_classes and not registry.empty:
         class_assets = registry[registry["asset_class"].isin(selected_classes)]["asset"].tolist()
-        filtered = filtered[filtered["asset"].isin(class_assets)]
+        filtered_all_resolved = filtered_all_resolved[filtered_all_resolved["asset"].isin(class_assets)]
         if not window_source.empty and "asset" in window_source:
             window_source = window_source[window_source["asset"].isin(class_assets)]
 
+    filtered = filtered_all_resolved.copy()
     window = common_forward_window(window_source)
     if timeline_mode == "Common forward window" and window["usable"]:
         filtered = filtered[
@@ -610,6 +644,11 @@ def page_asset_selection_lab(data):
         ]
     elif timeline_mode == "Common forward window":
         st.warning("Common forward window is not usable yet. Showing available resolved samples for now.", icon=":material/warning:")
+    if timeline_mode == "Common forward window" and filtered.empty and not filtered_all_resolved.empty:
+        st.warning(
+            "The common observation window has no resolved trades for the current filters yet. Portfolio evidence below is empty until future setups resolve; switch to All resolved samples for exploratory ranking.",
+            icon=":material/timeline:",
+        )
 
     asset_count = max(1, int(filtered["asset"].nunique()) if not filtered.empty and "asset" in filtered else 1)
     max_portfolio_size = max(1, min(12, asset_count))
@@ -621,42 +660,81 @@ def page_asset_selection_lab(data):
 
     fit = strategy_fit_table(filtered, registry, data.market_open_completeness)
     portfolios, curves = portfolio_candidate_sets(filtered, fit, top_n=top_n, max_avg_corr=max_corr)
-    best = portfolios.copy()
-    if not best.empty:
-        best["_net"] = best["Net return"].str.rstrip("%").replace("n/a", "0").astype(float)
-        best = best.sort_values("_net", ascending=False).iloc[0]
+    ranked_assets = fit[fit["Orders"] > 0]["Asset"].astype(str).head(top_n).tolist() if not fit.empty and "Orders" in fit else []
+    if not ranked_assets and not filtered.empty and "asset" in filtered:
+        ranked_assets = sorted(filtered["asset"].dropna().astype(str).unique().tolist())[:top_n]
+
+    preset_assets: dict[str, list[str]] = {"Top score": ranked_assets}
+    if not portfolios.empty and {"Portfolio", "Assets"}.issubset(portfolios.columns):
+        for _, row in portfolios.iterrows():
+            assets_text = str(row.get("Assets", ""))
+            assets = [asset.strip() for asset in assets_text.split(",") if asset.strip() and asset.strip() != "None"]
+            preset_assets[str(row.get("Portfolio"))] = assets
+    preset_names = [name for name, assets in preset_assets.items() if assets]
+    preset_choice = st.selectbox("Portfolio preset", preset_names or ["No preset available"])
+    default_assets = preset_assets.get(preset_choice, ranked_assets)
+    available_assets = fit["Asset"].astype(str).tolist() if not fit.empty and "Asset" in fit else sorted(filtered_all_resolved["asset"].dropna().astype(str).unique().tolist())
+    selected_assets = st.multiselect(
+        "Selected portfolio assets",
+        available_assets,
+        default=[asset for asset in default_assets if asset in available_assets],
+        help="Equal-weight portfolio simulation. Add/remove assets here to see expected return, drawdown, PF, price blend, and trade contribution.",
+    )
+    lookback_days = st.select_slider("Price overlay lookback", options=[7, 14, 30, 60, 120, 365], value=30)
+
+    selected_trades = filtered[filtered["asset"].isin(selected_assets)].copy() if selected_assets and not filtered.empty else pd.DataFrame()
+    summary = portfolio_research_summary(filtered, selected_assets, "Selected portfolio")
+    contribution = portfolio_asset_contribution_table(filtered, selected_assets)
+    prices = load_standardized_price_history(tuple(selected_assets), int(lookback_days))
 
     with st.container(horizontal=True):
         st.metric("Assets scored", len(fit), border=True)
-        st.metric("Simulation orders", len(filtered), border=True)
-        st.metric("Comparison", timeline_mode, border=True)
-        st.metric("Best portfolio", best["Portfolio"] if not portfolios.empty else "n/a", border=True)
-        st.metric("Best net return", best["Net return"] if not portfolios.empty else "n/a", border=True)
-        st.metric("Best PF", best["PF"] if not portfolios.empty else "n/a", border=True)
+        st.metric("Selected assets", summary["asset_count"], border=True)
+        st.metric("Portfolio orders", summary["orders"], sample_label(int(summary["orders"])), border=True)
+        st.metric("Expected return / period", _metric_value((summary["expected_return_pct"] or 0) / 100, "percent") if summary["expected_return_pct"] is not None else "n/a", border=True)
+        st.metric("Expected drawdown", _metric_value((summary["expected_drawdown_pct"] or 0) / 100, "percent") if summary["expected_drawdown_pct"] is not None else "n/a", border=True)
+        st.metric("Profit factor", "inf" if summary["profit_factor"] == float("inf") else num(summary["profit_factor"], 2), border=True)
+        st.metric("Net return", _metric_value(summary["net_return_pct"] / 100, "percent"), border=True)
 
     if window["usable"]:
         st.caption(
             f"Common forward window: {window['start'].strftime('%Y-%m-%d %H:%M UTC')} "
             f"to {window['end'].strftime('%Y-%m-%d %H:%M UTC')} across {window['assets']} asset(s)."
         )
+        if timeline_mode == "All resolved samples":
+            st.caption("Current view uses all resolved samples, so assets may have different starting dates. Use Common forward window when enough resolved trades exist across the same timeline.")
     if universe_view == "All registry":
         st.info("Data-only candidates are shown for readiness, but their score stays 0 until forward research and selection are enabled.", icon=":material/info:")
+    if summary["orders"] < 20:
+        st.warning("Selected portfolio still has a low resolved-trade sample. Treat expected return, PF, and drawdown as early research evidence, not a final allocation decision.", icon=":material/warning:")
 
     chart_rows = min(len(fit), 24) if not fit.empty else 0
 
-    left, right = st.columns([1.4, 1])
+    st.subheader("Selected portfolio visual")
+    st.plotly_chart(charts.standardized_price_portfolio(prices, selected_trades), width="stretch")
+    st.caption("Price paths are standardized to 100 at the first visible bar. The white line is the equal-weight price blend; markers show strategy setup points for selected assets.")
+
+    left, right = st.columns([1.35, 1])
     with left:
-        st.plotly_chart(charts.portfolio_equity_curve(curves), width="stretch")
+        st.plotly_chart(charts.selected_portfolio_equity(summary["equity"], "Selected portfolio P/L curve"), width="stretch")
     with right:
-        st.plotly_chart(charts.strategy_fit_score_bar(fit.head(chart_rows)), width="stretch")
+        st.plotly_chart(charts.portfolio_contribution_bar(contribution), width="stretch")
 
     left, right = st.columns([1, 1])
     with left:
-        st.subheader("Portfolio candidates")
-        dataframe_or_empty(portfolios, "No portfolio candidate yet.", height=280)
+        st.subheader("Portfolio presets")
+        dataframe_or_empty(portfolios, "No portfolio candidate yet.", height=300)
     with right:
         st.subheader("Strategy-return correlation")
-        st.plotly_chart(charts.strategy_correlation_heatmap(strategy_return_correlation(filtered)), width="stretch")
+        st.plotly_chart(charts.strategy_correlation_heatmap(strategy_return_correlation(selected_trades)), width="stretch")
+
+    left, right = st.columns([1, 1])
+    with left:
+        st.subheader("Selected asset contribution")
+        dataframe_or_empty(contribution, "No selected-asset contribution yet.", height=320)
+    with right:
+        st.subheader("Strategy fit score")
+        st.plotly_chart(charts.strategy_fit_score_bar(fit.head(chart_rows)), width="stretch")
 
     st.subheader("Asset ranking")
     if fit.empty:
@@ -671,6 +749,27 @@ def page_asset_selection_lab(data):
                 "Score": st.column_config.ProgressColumn("Score", min_value=0, max_value=100, format="%.1f"),
             },
         )
+
+    st.subheader("Selected portfolio trade log")
+    trade_log = selected_trades.copy().sort_values("timestamp", ascending=False) if not selected_trades.empty else pd.DataFrame()
+    if not trade_log.empty:
+        trade_log["timestamp"] = pd.to_datetime(trade_log["timestamp"], errors="coerce").dt.strftime("%Y-%m-%d %H:%M UTC")
+        display_cols = [
+            "timestamp",
+            "asset",
+            "direction",
+            "decision",
+            "trade_bucket",
+            "p_mr_fail",
+            "p_mr_win",
+            "future_return_24h",
+            "sim_return_pct",
+            "outcome",
+            "why",
+        ]
+        dataframe_or_empty(trade_log[[c for c in display_cols if c in trade_log]], "No selected portfolio trades.", height=360)
+    else:
+        st.info("No selected portfolio trades under the current filters.", icon=":material/filter_alt:")
 
     st.subheader("Asset registry")
     data_only = data.asset_registry.copy()
