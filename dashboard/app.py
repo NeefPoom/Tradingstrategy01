@@ -720,6 +720,12 @@ def page_asset_selection_lab(data):
     with right:
         st.plotly_chart(charts.portfolio_contribution_bar(contribution), width="stretch")
 
+    left, right = st.columns([1.35, 1])
+    with left:
+        st.plotly_chart(charts.portfolio_trade_timeline(selected_trades), width="stretch")
+    with right:
+        st.plotly_chart(charts.portfolio_underwater(summary["equity"]), width="stretch")
+
     left, right = st.columns([1, 1])
     with left:
         st.subheader("Portfolio presets")

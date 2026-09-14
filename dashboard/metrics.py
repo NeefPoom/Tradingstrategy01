@@ -811,9 +811,10 @@ def portfolio_asset_contribution_table(trades: pd.DataFrame, assets: list[str]) 
                 "Max DD": pct((stats["max_drawdown"] or 0) / 100),
                 "Avg return": pct((stats["avg_return"] or 0) / 100),
                 "Contribution": pct(contribution),
+                "_net_return_pct": net,
             }
         )
-    return pd.DataFrame(rows).sort_values("Net return", ascending=False).reset_index(drop=True)[columns]
+    return pd.DataFrame(rows).sort_values("_net_return_pct", ascending=False).reset_index(drop=True)[columns]
 
 
 def portfolio_candidate_sets(

@@ -231,6 +231,85 @@ def selected_portfolio_equity(equity: pd.DataFrame, title: str = "Selected portf
     return fig
 
 
+def portfolio_underwater(equity: pd.DataFrame) -> go.Figure:
+    if equity.empty or not {"timestamp", "equity_pct"}.issubset(equity.columns):
+        return empty_figure("WAITING FOR PORTFOLIO DRAWDOWN")
+    frame = equity.copy()
+    frame["timestamp"] = pd.to_datetime(frame["timestamp"], errors="coerce")
+    frame["equity_pct"] = pd.to_numeric(frame["equity_pct"], errors="coerce")
+    frame = frame.dropna(subset=["timestamp", "equity_pct"]).sort_values("timestamp")
+    if frame.empty:
+        return empty_figure("WAITING FOR PORTFOLIO DRAWDOWN")
+    frame["drawdown_pct"] = frame["equity_pct"] - frame["equity_pct"].cummax()
+    fig = go.Figure()
+    fig.add_trace(
+        go.Scatter(
+            x=frame["timestamp"],
+            y=frame["drawdown_pct"],
+            mode="lines",
+            fill="tozeroy",
+            name="Drawdown",
+            line=dict(color="#ef4444", width=2),
+            fillcolor="rgba(239, 68, 68, 0.35)",
+        )
+    )
+    fig.add_hline(y=0, line_color="#94a3b8", line_width=1)
+    fig.update_layout(
+        template="plotly_dark",
+        height=260,
+        margin=dict(l=20, r=20, t=35, b=20),
+        title="Portfolio underwater drawdown",
+        xaxis_title="Time",
+        yaxis_title="Drawdown %",
+    )
+    return fig
+
+
+def portfolio_trade_timeline(trades: pd.DataFrame) -> go.Figure:
+    if trades.empty or not {"timestamp", "asset", "direction", "sim_return_pct"}.issubset(trades.columns):
+        return empty_figure("WAITING FOR SELECTED PORTFOLIO TRADES")
+    frame = trades.copy()
+    frame["timestamp"] = pd.to_datetime(frame["timestamp"], errors="coerce")
+    frame["sim_return_pct"] = pd.to_numeric(frame["sim_return_pct"], errors="coerce")
+    frame = frame.dropna(subset=["timestamp", "asset", "direction", "sim_return_pct"]).sort_values("timestamp")
+    if frame.empty:
+        return empty_figure("WAITING FOR SELECTED PORTFOLIO TRADES")
+    frame["Direction"] = frame["direction"].astype(str).str.upper()
+    frame["Outcome"] = frame["sim_return_pct"].map(lambda value: "Win" if value > 0 else ("Loss" if value < 0 else "Flat"))
+    frame["Marker size"] = frame["sim_return_pct"].abs().clip(lower=0.15, upper=5) * 6 + 8
+    frame["Bucket"] = frame.get("trade_bucket", frame.get("decision", "")).astype(str)
+    symbols = {"LONG": "triangle-up", "SHORT": "triangle-down"}
+    colors = {"Win": "#22c55e", "Loss": "#ef4444", "Flat": "#94a3b8"}
+    fig = go.Figure()
+    for direction, direction_rows in frame.groupby("Direction", dropna=False):
+        fig.add_trace(
+            go.Scatter(
+                x=direction_rows["timestamp"],
+                y=direction_rows["asset"],
+                mode="markers",
+                name=f"{direction} setup",
+                marker=dict(
+                    symbol=symbols.get(str(direction), "circle"),
+                    size=direction_rows["Marker size"],
+                    color=direction_rows["Outcome"].map(colors),
+                    line=dict(width=1, color="#020617"),
+                ),
+                customdata=direction_rows[["Outcome", "sim_return_pct", "Bucket"]].to_numpy(),
+                hovertemplate="%{y}<br>%{x}<br>%{customdata[2]}<br>%{customdata[0]} %{customdata[1]:.2f}%<extra></extra>",
+            )
+        )
+    fig.update_layout(
+        template="plotly_dark",
+        height=max(280, min(520, 38 * frame["asset"].nunique() + 120)),
+        margin=dict(l=20, r=20, t=35, b=20),
+        title="Selected asset trade signal timeline",
+        xaxis_title="Time",
+        yaxis_title="Asset",
+        legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="left", x=0),
+    )
+    return fig
+
+
 def portfolio_contribution_bar(df: pd.DataFrame) -> go.Figure:
     if df.empty or not {"Asset", "Net return"}.issubset(df.columns):
         return empty_figure("WAITING FOR ASSET CONTRIBUTION")
