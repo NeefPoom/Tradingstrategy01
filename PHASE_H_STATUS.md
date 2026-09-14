@@ -1,6 +1,6 @@
 # Phase H Status - Frozen Forward Validation
 
-**Generated:** 2026-09-14T16:37:07.741038
+**Generated:** 2026-09-14T20:34:49.294760
 
 ## 1. Phase H start date
 2026-08-30
@@ -15,62 +15,62 @@ H1.0
 15
 
 ## 5. Observation count by asset
-- ADAUSD: 167
-- AUDCAD: 118
-- AUDCHF: 118
-- AUDJPY: 118
-- AUDNZD: 118
-- AUDUSD: 118
+- ADAUSD: 171
+- AUDCAD: 122
+- AUDCHF: 122
+- AUDJPY: 122
+- AUDNZD: 122
+- AUDUSD: 122
 - AUS200: 35
-- AVAXUSD: 167
-- BCHUSD: 167
-- BNBUSD: 167
-- BRENT: 104
-- BTCUSD: 365
-- CADCHF: 118
-- CADJPY: 118
-- CHFJPY: 118
-- DOGEUSD: 167
-- DOTUSD: 167
-- ETHUSD: 365
+- AVAXUSD: 171
+- BCHUSD: 171
+- BNBUSD: 171
+- BRENT: 108
+- BTCUSD: 369
+- CADCHF: 122
+- CADJPY: 122
+- CHFJPY: 122
+- DOGEUSD: 171
+- DOTUSD: 171
+- ETHUSD: 369
 - EU50: 45
-- EURAUD: 118
-- EURCAD: 256
-- EURCHF: 118
-- EURGBP: 118
-- EURJPY: 118
-- EURUSD: 118
+- EURAUD: 122
+- EURCAD: 260
+- EURCHF: 122
+- EURGBP: 122
+- EURJPY: 122
+- EURUSD: 122
 - FRA40: 45
-- GBPAUD: 118
-- GBPCAD: 118
-- GBPCHF: 118
-- GBPJPY: 118
-- GBPUSD: 118
+- GBPAUD: 122
+- GBPCAD: 122
+- GBPCHF: 122
+- GBPJPY: 122
+- GBPUSD: 122
 - GER40: 45
-- GOLD: 223
+- GOLD: 227
 - HK50: 35
 - JPN225: 35
-- LINKUSD: 167
-- LTCUSD: 167
-- NAS100: 31
-- NATGAS: 104
-- NZDCAD: 118
-- NZDCHF: 118
-- NZDJPY: 118
-- NZDUSD: 118
-- SILVER: 104
-- SOLUSD: 167
+- LINKUSD: 171
+- LTCUSD: 171
+- NAS100: 35
+- NATGAS: 108
+- NZDCAD: 122
+- NZDCHF: 122
+- NZDJPY: 122
+- NZDUSD: 122
+- SILVER: 108
+- SOLUSD: 171
 - UK100: 45
-- US30: 31
-- US500: 67
-- USDCAD: 118
-- USDCHF: 118
-- USDJPY: 254
-- WTI: 104
-- XRPUSD: 167
+- US30: 35
+- US500: 71
+- USDCAD: 122
+- USDCHF: 122
+- USDJPY: 258
+- WTI: 108
+- XRPUSD: 171
 
 ## 6. MR candidates / resolved
-- 49 candidates, 0 resolved
+- 54 candidates, 0 resolved
 
 ## 7. Runner events / resolved
 0 events, 0 resolved (Runner lifecycle starts only after a live MR position reaches TP1)
