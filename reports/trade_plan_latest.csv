@@ -1,1 +1,2 @@
-
+asset,direction,signal_time,reference_entry_price,p_mr_win,p_mr_fail,pred_mr_return_pct,risk_status,stop_status,position_size
+CADCHF,SHORT,2026-09-14 10:00:00,0.5879899859428406,0.4985387814605968,0.24230805964937233,0.09798192424146508,max 0.5% equity,MANUAL_STOP_REQUIRED,POSITION_SIZE_PENDING_STOP
