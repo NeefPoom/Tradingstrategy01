@@ -1,1 +1,2 @@
-
+asset,direction,signal_time,reference_entry_price,p_mr_win,p_mr_fail,pred_mr_return_pct,risk_status,stop_status,position_size
+EU50,LONG,2026-09-16 09:00:00,6255.4501953125,0.44808530886774556,0.3905198143047471,0.1477088952107097,max 0.5% equity,MANUAL_STOP_REQUIRED,POSITION_SIZE_PENDING_STOP
