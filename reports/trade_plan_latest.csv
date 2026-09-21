@@ -1,2 +1,1 @@
-asset,direction,signal_time,reference_entry_price,p_mr_win,p_mr_fail,pred_mr_return_pct,risk_status,stop_status,position_size
-UK100,SHORT,2026-09-18 15:00:00,10654.330078125,0.8776102369909033,0.25206984812742944,0.40038522526318376,max 0.5% equity,MANUAL_STOP_REQUIRED,POSITION_SIZE_PENDING_STOP
+
