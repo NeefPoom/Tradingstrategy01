@@ -1,2 +1,1 @@
-asset,direction,signal_time,reference_entry_price,p_mr_win,p_mr_fail,pred_mr_return_pct,risk_status,stop_status,position_size
-NZDCAD,SHORT,2026-09-22 01:00:00,0.800000011920929,0.6831186227907068,0.06982051887229379,0.058509453072281496,max 0.5% equity,MANUAL_STOP_REQUIRED,POSITION_SIZE_PENDING_STOP
+
