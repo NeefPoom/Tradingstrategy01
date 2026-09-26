@@ -1,6 +1,6 @@
 # Phase H Status - Frozen Forward Validation
 
-**Generated:** 2026-09-26T19:49:46.400688
+**Generated:** 2026-09-26T22:44:27.961943
 
 ## 1. Phase H start date
 2026-08-30
@@ -15,24 +15,24 @@ H1.0
 27
 
 ## 5. Observation count by asset
-- ADAUSD: 458
+- ADAUSD: 461
 - AUDCAD: 339
 - AUDCHF: 339
 - AUDJPY: 339
 - AUDNZD: 339
 - AUDUSD: 339
 - AUS200: 98
-- AVAXUSD: 458
-- BCHUSD: 458
-- BNBUSD: 458
+- AVAXUSD: 461
+- BCHUSD: 461
+- BNBUSD: 461
 - BRENT: 316
-- BTCUSD: 656
+- BTCUSD: 659
 - CADCHF: 339
 - CADJPY: 339
 - CHFJPY: 339
-- DOGEUSD: 458
-- DOTUSD: 458
-- ETHUSD: 656
+- DOGEUSD: 461
+- DOTUSD: 461
+- ETHUSD: 659
 - EU50: 126
 - EURAUD: 339
 - EURCAD: 477
@@ -50,8 +50,8 @@ H1.0
 - GOLD: 436
 - HK50: 98
 - JPN225: 77
-- LINKUSD: 458
-- LTCUSD: 458
+- LINKUSD: 461
+- LTCUSD: 461
 - NAS100: 98
 - NATGAS: 317
 - NZDCAD: 339
@@ -59,7 +59,7 @@ H1.0
 - NZDJPY: 339
 - NZDUSD: 339
 - SILVER: 317
-- SOLUSD: 458
+- SOLUSD: 461
 - UK100: 126
 - US30: 98
 - US500: 134
@@ -67,7 +67,7 @@ H1.0
 - USDCHF: 337
 - USDJPY: 475
 - WTI: 316
-- XRPUSD: 458
+- XRPUSD: 461
 
 ## 6. MR candidates / resolved
 - 315 candidates, 0 resolved
