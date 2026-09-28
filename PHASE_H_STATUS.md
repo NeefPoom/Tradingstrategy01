@@ -1,6 +1,6 @@
 # Phase H Status - Frozen Forward Validation
 
-**Generated:** 2026-09-28T05:20:02.637646
+**Generated:** 2026-09-28T12:07:08.439449
 
 ## 1. Phase H start date
 2026-08-30
@@ -12,65 +12,65 @@ H1.0
 0.45 (locked)
 
 ## 4. Days observed
-28
+29
 
 ## 5. Observation count by asset
-- ADAUSD: 492
-- AUDCAD: 345
-- AUDCHF: 345
-- AUDJPY: 345
-- AUDNZD: 345
-- AUDUSD: 345
-- AUS200: 103
-- AVAXUSD: 492
-- BCHUSD: 492
-- BNBUSD: 492
-- BRENT: 321
-- BTCUSD: 690
-- CADCHF: 345
-- CADJPY: 345
-- CHFJPY: 345
-- DOGEUSD: 492
-- DOTUSD: 492
-- ETHUSD: 690
-- EU50: 126
-- EURAUD: 345
-- EURCAD: 483
-- EURCHF: 345
-- EURGBP: 345
-- EURJPY: 345
-- EURUSD: 345
-- FRA40: 126
-- GBPAUD: 345
-- GBPCAD: 345
-- GBPCHF: 345
-- GBPJPY: 345
-- GBPUSD: 345
-- GER40: 126
-- GOLD: 441
-- HK50: 101
-- JPN225: 82
-- LINKUSD: 492
-- LTCUSD: 492
+- ADAUSD: 499
+- AUDCAD: 352
+- AUDCHF: 352
+- AUDJPY: 352
+- AUDNZD: 352
+- AUDUSD: 351
+- AUS200: 105
+- AVAXUSD: 499
+- BCHUSD: 499
+- BNBUSD: 499
+- BRENT: 330
+- BTCUSD: 696
+- CADCHF: 352
+- CADJPY: 352
+- CHFJPY: 352
+- DOGEUSD: 499
+- DOTUSD: 499
+- ETHUSD: 696
+- EU50: 131
+- EURAUD: 352
+- EURCAD: 489
+- EURCHF: 352
+- EURGBP: 352
+- EURJPY: 352
+- EURUSD: 351
+- FRA40: 131
+- GBPAUD: 352
+- GBPCAD: 352
+- GBPCHF: 352
+- GBPJPY: 352
+- GBPUSD: 351
+- GER40: 131
+- GOLD: 449
+- HK50: 105
+- JPN225: 84
+- LINKUSD: 499
+- LTCUSD: 499
 - NAS100: 98
-- NATGAS: 322
-- NZDCAD: 345
-- NZDCHF: 345
-- NZDJPY: 345
-- NZDUSD: 345
-- SILVER: 322
-- SOLUSD: 492
-- UK100: 126
+- NATGAS: 331
+- NZDCAD: 352
+- NZDCHF: 352
+- NZDJPY: 352
+- NZDUSD: 351
+- SILVER: 331
+- SOLUSD: 499
+- UK100: 131
 - US30: 98
 - US500: 134
-- USDCAD: 345
-- USDCHF: 343
-- USDJPY: 481
-- WTI: 321
-- XRPUSD: 492
+- USDCAD: 352
+- USDCHF: 350
+- USDJPY: 487
+- WTI: 330
+- XRPUSD: 499
 
 ## 6. MR candidates / resolved
-- 334 candidates, 0 resolved
+- 340 candidates, 0 resolved
 
 ## 7. Runner events / resolved
 0 events, 0 resolved (Runner lifecycle starts only after a live MR position reaches TP1)
