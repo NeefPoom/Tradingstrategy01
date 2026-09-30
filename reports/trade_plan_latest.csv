@@ -1,1 +1,2 @@
-
+asset,direction,signal_time,reference_entry_price,p_mr_win,p_mr_fail,pred_mr_return_pct,risk_status,stop_status,position_size
+USDCAD,SHORT,2026-09-30 08:00:00,1.4180899858474731,0.24076914020957738,0.4486421294930549,0.03608747101366523,max 0.5% equity,MANUAL_STOP_REQUIRED,POSITION_SIZE_PENDING_STOP
