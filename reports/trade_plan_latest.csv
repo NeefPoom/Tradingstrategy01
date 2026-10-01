@@ -1,2 +1,1 @@
-asset,direction,signal_time,reference_entry_price,p_mr_win,p_mr_fail,pred_mr_return_pct,risk_status,stop_status,position_size
-ETHUSD,SHORT,2026-10-01 00:00:00,2680.760009765625,0.38849027217255977,0.38383436350303474,-0.18998577589662052,max 0.5% equity,MANUAL_STOP_REQUIRED,POSITION_SIZE_PENDING_STOP
+
