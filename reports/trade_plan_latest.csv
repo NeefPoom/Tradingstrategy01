@@ -1,2 +1,1 @@
-asset,direction,signal_time,reference_entry_price,p_mr_win,p_mr_fail,pred_mr_return_pct,risk_status,stop_status,position_size
-SOLUSD,SHORT,2026-10-02 20:00:00,117.97000122070312,0.863769877195892,0.061038637177005264,1.593208725532635,max 0.5% equity,MANUAL_STOP_REQUIRED,POSITION_SIZE_PENDING_STOP
+
