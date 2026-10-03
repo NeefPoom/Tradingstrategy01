@@ -1,1 +1,2 @@
-
+asset,direction,signal_time,reference_entry_price,p_mr_win,p_mr_fail,pred_mr_return_pct,risk_status,stop_status,position_size
+AVAXUSD,LONG,2026-10-03 11:00:00,11.130000114440918,0.7854819106671961,0.11492740538183531,1.474180032929943,max 0.5% equity,MANUAL_STOP_REQUIRED,POSITION_SIZE_PENDING_STOP
