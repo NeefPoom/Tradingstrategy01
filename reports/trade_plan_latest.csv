@@ -1,2 +1,1 @@
-asset,direction,signal_time,reference_entry_price,p_mr_win,p_mr_fail,pred_mr_return_pct,risk_status,stop_status,position_size
-ADAUSD,SHORT,2026-10-05 18:00:00,0.2645100057125091,0.6051022878605524,0.36070864484372,0.3623890660298307,max 0.5% equity,MANUAL_STOP_REQUIRED,POSITION_SIZE_PENDING_STOP
+
