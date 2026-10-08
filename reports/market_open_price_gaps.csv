@@ -1,1 +1,2 @@
-
+asset,first_missing_open_bar_utc,last_missing_open_bar_utc,missing_open_bars,recoverable_by_yahoo_730d,calendar
+WTI,2026-10-08 03:00:00,2026-10-08 03:00:00,1,True,CMEGlobex_Energy

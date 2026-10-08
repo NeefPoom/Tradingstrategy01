@@ -1,2 +1,1 @@
-asset,direction,signal_time,reference_entry_price,p_mr_win,p_mr_fail,pred_mr_return_pct,risk_status,stop_status,position_size
-ETHUSD,LONG,2026-10-07 23:00:00,2573.550048828125,0.5479657875484062,0.3470724556994212,-0.15664186084167295,max 0.5% equity,MANUAL_STOP_REQUIRED,POSITION_SIZE_PENDING_STOP
+
