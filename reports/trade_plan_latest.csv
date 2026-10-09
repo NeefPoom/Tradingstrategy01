@@ -1,1 +1,2 @@
-
+asset,direction,signal_time,reference_entry_price,p_mr_win,p_mr_fail,pred_mr_return_pct,risk_status,stop_status,position_size
+BNBUSD,LONG,2026-10-09 06:00:00,741.97998046875,0.7846321467385491,0.26806344494147366,0.8748703065893457,max 0.5% equity,MANUAL_STOP_REQUIRED,POSITION_SIZE_PENDING_STOP
