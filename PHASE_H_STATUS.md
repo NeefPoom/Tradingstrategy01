@@ -1,6 +1,6 @@
 # Phase H Status - Frozen Forward Validation
 
-**Generated:** 2026-10-12T05:58:09.923650
+**Generated:** 2026-10-12T15:29:18.169022
 
 ## 1. Phase H start date
 2026-08-30
@@ -12,65 +12,65 @@ H1.0
 0.45 (locked)
 
 ## 4. Days observed
-42
+43
 
 ## 5. Observation count by asset
-- ADAUSD: 828
-- AUDCAD: 583
-- AUDCHF: 583
-- AUDJPY: 583
-- AUDNZD: 583
-- AUDUSD: 583
-- AUS200: 174
-- AVAXUSD: 828
-- BCHUSD: 828
-- BNBUSD: 828
-- BRENT: 553
-- BTCUSD: 1026
-- CADCHF: 583
-- CADJPY: 583
-- CHFJPY: 583
-- DOGEUSD: 828
-- DOTUSD: 828
-- ETHUSD: 1026
-- EU50: 216
-- EURAUD: 583
-- EURCAD: 721
-- EURCHF: 583
-- EURGBP: 584
-- EURJPY: 583
-- EURUSD: 583
-- FRA40: 216
-- GBPAUD: 583
-- GBPCAD: 583
-- GBPCHF: 583
-- GBPJPY: 583
-- GBPUSD: 583
-- GER40: 216
-- GOLD: 674
-- HK50: 165
+- ADAUSD: 838
+- AUDCAD: 593
+- AUDCHF: 593
+- AUDJPY: 593
+- AUDNZD: 593
+- AUDUSD: 593
+- AUS200: 175
+- AVAXUSD: 838
+- BCHUSD: 838
+- BNBUSD: 838
+- BRENT: 563
+- BTCUSD: 1036
+- CADCHF: 593
+- CADJPY: 593
+- CHFJPY: 593
+- DOGEUSD: 838
+- DOTUSD: 838
+- ETHUSD: 1036
+- EU50: 224
+- EURAUD: 593
+- EURCAD: 731
+- EURCHF: 593
+- EURGBP: 594
+- EURJPY: 593
+- EURUSD: 593
+- FRA40: 224
+- GBPAUD: 593
+- GBPCAD: 593
+- GBPCHF: 593
+- GBPJPY: 593
+- GBPUSD: 593
+- GER40: 224
+- GOLD: 684
+- HK50: 168
 - JPN225: 147
-- LINKUSD: 828
-- LTCUSD: 828
-- NAS100: 168
-- NATGAS: 556
-- NZDCAD: 583
-- NZDCHF: 583
-- NZDJPY: 583
-- NZDUSD: 583
-- SILVER: 554
-- SOLUSD: 828
-- UK100: 216
-- US30: 168
-- US500: 204
-- USDCAD: 583
-- USDCHF: 579
-- USDJPY: 718
-- WTI: 554
-- XRPUSD: 828
+- LINKUSD: 838
+- LTCUSD: 838
+- NAS100: 169
+- NATGAS: 566
+- NZDCAD: 593
+- NZDCHF: 593
+- NZDJPY: 593
+- NZDUSD: 593
+- SILVER: 564
+- SOLUSD: 838
+- UK100: 224
+- US30: 169
+- US500: 205
+- USDCAD: 593
+- USDCHF: 589
+- USDJPY: 728
+- WTI: 564
+- XRPUSD: 838
 
 ## 6. MR candidates / resolved
-- 646 candidates, 0 resolved
+- 670 candidates, 0 resolved
 
 ## 7. Runner events / resolved
 0 events, 0 resolved (Runner lifecycle starts only after a live MR position reaches TP1)
