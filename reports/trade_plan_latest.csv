@@ -1,1 +1,2 @@
-
+asset,direction,signal_time,reference_entry_price,p_mr_win,p_mr_fail,pred_mr_return_pct,risk_status,stop_status,position_size
+AUDUSD,LONG,2026-10-13 11:00:00,0.6975446939468384,0.805011565420955,0.33419188795843013,0.3273074191556533,max 0.5% equity,MANUAL_STOP_REQUIRED,POSITION_SIZE_PENDING_STOP
