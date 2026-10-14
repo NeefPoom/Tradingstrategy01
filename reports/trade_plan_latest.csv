@@ -1,2 +1,1 @@
-asset,direction,signal_time,reference_entry_price,p_mr_win,p_mr_fail,pred_mr_return_pct,risk_status,stop_status,position_size
-AUDJPY,SHORT,2026-10-14 17:00:00,110.38500213623048,0.8963144339221194,0.11898476440291131,-0.017574690059741892,max 0.5% equity,MANUAL_STOP_REQUIRED,POSITION_SIZE_PENDING_STOP
+
