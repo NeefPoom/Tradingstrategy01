@@ -1,2 +1,1 @@
-asset,direction,signal_time,reference_entry_price,p_mr_win,p_mr_fail,pred_mr_return_pct,risk_status,stop_status,position_size
-GOLD,LONG,2026-10-15 04:00:00,4165.60009765625,0.8514004028290892,0.2382999437417659,0.6620041351218392,max 0.5% equity,MANUAL_STOP_REQUIRED,POSITION_SIZE_PENDING_STOP
+
