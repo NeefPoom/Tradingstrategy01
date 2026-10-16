@@ -1,2 +1,1 @@
-asset,direction,signal_time,reference_entry_price,p_mr_win,p_mr_fail,pred_mr_return_pct,risk_status,stop_status,position_size
-AUDCAD,LONG,2026-10-16 00:00:00,0.9825199842453004,0.6341372085684817,0.38175769170666496,0.06902759031301008,max 0.5% equity,MANUAL_STOP_REQUIRED,POSITION_SIZE_PENDING_STOP
+
