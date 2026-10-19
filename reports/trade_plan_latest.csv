@@ -1,1 +1,2 @@
-
+asset,direction,signal_time,reference_entry_price,p_mr_win,p_mr_fail,pred_mr_return_pct,risk_status,stop_status,position_size
+SILVER,SHORT,2026-10-19 17:00:00,57.36000061035156,0.5371024445593171,0.2943167554334487,0.016850974792330314,max 0.5% equity,MANUAL_STOP_REQUIRED,POSITION_SIZE_PENDING_STOP
