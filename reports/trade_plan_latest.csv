@@ -1,1 +1,2 @@
-
+asset,direction,signal_time,reference_entry_price,p_mr_win,p_mr_fail,pred_mr_return_pct,risk_status,stop_status,position_size
+CHFJPY,SHORT,2026-10-22 06:00:00,191.5659942626953,0.2647249079915999,0.3840912789776251,-0.03120172202266407,max 0.5% equity,MANUAL_STOP_REQUIRED,POSITION_SIZE_PENDING_STOP
