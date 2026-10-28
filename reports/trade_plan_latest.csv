@@ -1,2 +1,1 @@
-asset,direction,signal_time,reference_entry_price,p_mr_win,p_mr_fail,pred_mr_return_pct,risk_status,stop_status,position_size
-NATGAS,SHORT,2026-10-28 18:00:00,3.0199999809265137,0.5172073172131967,0.4291544211172401,0.39093394734662484,max 0.5% equity,MANUAL_STOP_REQUIRED,POSITION_SIZE_PENDING_STOP
+
