@@ -1,6 +1,6 @@
 # Phase H Status - Frozen Forward Validation
 
-**Generated:** 2026-10-31T16:22:15.383755
+**Generated:** 2026-10-31T20:21:13.057669
 
 ## 1. Phase H start date
 2026-08-30
@@ -15,24 +15,24 @@ H1.0
 62
 
 ## 5. Observation count by asset
-- ADAUSD: 1295
+- ADAUSD: 1299
 - AUDCAD: 934
 - AUDCHF: 934
 - AUDJPY: 933
 - AUDNZD: 934
 - AUDUSD: 934
 - AUS200: 273
-- AVAXUSD: 1295
-- BCHUSD: 1295
-- BNBUSD: 1295
+- AVAXUSD: 1299
+- BCHUSD: 1299
+- BNBUSD: 1299
 - BRENT: 891
-- BTCUSD: 1493
+- BTCUSD: 1497
 - CADCHF: 934
 - CADJPY: 933
 - CHFJPY: 933
-- DOGEUSD: 1295
-- DOTUSD: 1295
-- ETHUSD: 1493
+- DOGEUSD: 1299
+- DOTUSD: 1299
+- ETHUSD: 1497
 - EU50: 351
 - EURAUD: 933
 - EURCAD: 1072
@@ -50,8 +50,8 @@ H1.0
 - GOLD: 1013
 - HK50: 259
 - JPN225: 245
-- LINKUSD: 1295
-- LTCUSD: 1295
+- LINKUSD: 1299
+- LTCUSD: 1299
 - NAS100: 273
 - NATGAS: 896
 - NZDCAD: 934
@@ -59,7 +59,7 @@ H1.0
 - NZDJPY: 933
 - NZDUSD: 934
 - SILVER: 892
-- SOLUSD: 1295
+- SOLUSD: 1299
 - UK100: 351
 - US30: 273
 - US500: 309
@@ -67,10 +67,10 @@ H1.0
 - USDCHF: 929
 - USDJPY: 1065
 - WTI: 892
-- XRPUSD: 1295
+- XRPUSD: 1299
 
 ## 6. MR candidates / resolved
-- 1150 candidates, 0 resolved
+- 1151 candidates, 0 resolved
 
 ## 7. Runner events / resolved
 0 events, 0 resolved (Runner lifecycle starts only after a live MR position reaches TP1)
