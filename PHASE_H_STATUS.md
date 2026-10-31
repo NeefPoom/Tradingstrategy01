@@ -1,6 +1,6 @@
 # Phase H Status - Frozen Forward Validation
 
-**Generated:** 2026-10-30T23:49:48.324710
+**Generated:** 2026-10-31T05:31:36.625997
 
 ## 1. Phase H start date
 2026-08-30
@@ -15,62 +15,62 @@ H1.0
 61
 
 ## 5. Observation count by asset
-- ADAUSD: 1278
-- AUDCAD: 933
-- AUDCHF: 933
+- ADAUSD: 1284
+- AUDCAD: 934
+- AUDCHF: 934
 - AUDJPY: 933
-- AUDNZD: 933
-- AUDUSD: 933
+- AUDNZD: 934
+- AUDUSD: 934
 - AUS200: 273
-- AVAXUSD: 1278
-- BCHUSD: 1278
-- BNBUSD: 1278
+- AVAXUSD: 1284
+- BCHUSD: 1284
+- BNBUSD: 1284
 - BRENT: 891
-- BTCUSD: 1476
-- CADCHF: 933
+- BTCUSD: 1482
+- CADCHF: 934
 - CADJPY: 933
 - CHFJPY: 933
-- DOGEUSD: 1278
-- DOTUSD: 1278
-- ETHUSD: 1476
+- DOGEUSD: 1284
+- DOTUSD: 1284
+- ETHUSD: 1482
 - EU50: 351
 - EURAUD: 933
-- EURCAD: 1071
+- EURCAD: 1072
 - EURCHF: 933
 - EURGBP: 934
 - EURJPY: 933
 - EURUSD: 933
 - FRA40: 351
-- GBPAUD: 933
-- GBPCAD: 933
-- GBPCHF: 933
+- GBPAUD: 934
+- GBPCAD: 934
+- GBPCHF: 934
 - GBPJPY: 933
 - GBPUSD: 934
 - GER40: 351
 - GOLD: 1013
 - HK50: 259
 - JPN225: 245
-- LINKUSD: 1278
-- LTCUSD: 1278
+- LINKUSD: 1284
+- LTCUSD: 1284
 - NAS100: 273
 - NATGAS: 896
-- NZDCAD: 933
-- NZDCHF: 933
+- NZDCAD: 934
+- NZDCHF: 934
 - NZDJPY: 933
-- NZDUSD: 933
+- NZDUSD: 934
 - SILVER: 892
-- SOLUSD: 1278
+- SOLUSD: 1284
 - UK100: 351
 - US30: 273
 - US500: 309
-- USDCAD: 934
-- USDCHF: 928
+- USDCAD: 935
+- USDCHF: 929
 - USDJPY: 1065
 - WTI: 892
-- XRPUSD: 1278
+- XRPUSD: 1284
 
 ## 6. MR candidates / resolved
-- 1149 candidates, 0 resolved
+- 1150 candidates, 0 resolved
 
 ## 7. Runner events / resolved
 0 events, 0 resolved (Runner lifecycle starts only after a live MR position reaches TP1)
