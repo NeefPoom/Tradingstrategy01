@@ -1,1 +1,2 @@
-
+asset,direction,signal_time,reference_entry_price,p_mr_win,p_mr_fail,pred_mr_return_pct,risk_status,stop_status,position_size
+AUDNZD,LONG,2026-11-03 23:00:00,1.246559977531433,0.6431124169802512,0.42002232765231534,0.187531343095367,max 0.5% equity,MANUAL_STOP_REQUIRED,POSITION_SIZE_PENDING_STOP
