@@ -1,1 +1,2 @@
-
+asset,direction,signal_time,reference_entry_price,p_mr_win,p_mr_fail,pred_mr_return_pct,risk_status,stop_status,position_size
+LTCUSD,LONG,2026-11-13 00:00:00,50.0099983215332,0.695329106176295,0.30162085951797785,0.23563053543061058,max 0.5% equity,MANUAL_STOP_REQUIRED,POSITION_SIZE_PENDING_STOP
