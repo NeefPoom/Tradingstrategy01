@@ -1,1 +1,2 @@
-
+asset,direction,signal_time,reference_entry_price,p_mr_win,p_mr_fail,pred_mr_return_pct,risk_status,stop_status,position_size
+ETHUSD,LONG,2026-11-18 01:00:00,1814.6400146484375,0.580702294728555,0.1745863396942541,0.37906965114479924,max 0.5% equity,MANUAL_STOP_REQUIRED,POSITION_SIZE_PENDING_STOP
