@@ -1,2 +1,1 @@
-asset,direction,signal_time,reference_entry_price,p_mr_win,p_mr_fail,pred_mr_return_pct,risk_status,stop_status,position_size
-GBPUSD,LONG,2026-11-20 07:00:00,1.311733365058899,0.5137918758904043,0.3712864266290969,0.33807079176478444,max 0.5% equity,MANUAL_STOP_REQUIRED,POSITION_SIZE_PENDING_STOP
+
