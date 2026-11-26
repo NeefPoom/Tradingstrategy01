@@ -1,2 +1,1 @@
-asset,direction,signal_time,reference_entry_price,p_mr_win,p_mr_fail,pred_mr_return_pct,risk_status,stop_status,position_size
-JPN225,LONG,2026-11-26 04:00:00,57742.1484375,0.677751446477714,0.2606475459261538,0.3736768304496554,max 0.5% equity,MANUAL_STOP_REQUIRED,POSITION_SIZE_PENDING_STOP
+
